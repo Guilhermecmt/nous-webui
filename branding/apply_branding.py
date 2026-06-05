@@ -98,6 +98,11 @@ def apply_favicons_and_css(master):
         open(os.path.join(d, "custom.css"), "w", encoding="utf-8").write(css)
         open(os.path.join(d, "favicon.svg"), "w", encoding="utf-8").write(svg)
         master.save(os.path.join(d, "favicon.ico"), sizes=ico_sizes)
+        # fundo de marmore (usado pelo custom.css)
+        for mb in ("marble-dark.png", "marble-light.png"):
+            mbsrc = os.path.join(ASSETS, mb)
+            if os.path.exists(mbsrc):
+                shutil.copy2(mbsrc, os.path.join(d, mb))
 
 
 def patch_name(app_name="Nous"):

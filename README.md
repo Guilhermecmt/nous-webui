@@ -49,7 +49,13 @@ Ela retorna **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** (com o motivo) e um 
 
 ## Instalacao
 
-### Automatica (1 comando) — recomendada
+### Instalador empacotado (.exe) — para usuarios finais
+`installer\nous-setup.iss` gera o **`Nous-Setup.exe`** (Inno Setup): um instalador
+online de ~8 MB que baixa e configura tudo, cria atalhos e um desinstalador.
+Compile com: `ISCC.exe installer\nous-setup.iss` → `dist\Nous-Setup.exe`.
+(Nao assinado — o Windows pode pedir "Mais informacoes → Executar assim mesmo".)
+
+### Automatica (1 comando) — para desenvolvedores
 ```powershell
 powershell -ExecutionPolicy Bypass -File installer\install-nous.ps1
 ```

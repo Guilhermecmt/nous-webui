@@ -4,6 +4,8 @@
    Edite e rode  branding/apply_branding.py  para reaplicar.
    ===================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&display=swap');
+
 :root {
     --nous-gold: #c8962e;        /* ouro principal */
     --nous-gold-deep: #a9781f;   /* ouro escuro (hover) */
@@ -44,3 +46,25 @@ button.bg-gray-850:hover { background-color: var(--nous-gold-deep) !important; }
 /* Cantos um pouco mais suaves (toque "Apple") */
 .rounded-xl { border-radius: 1rem; }
 .rounded-2xl { border-radius: 1.25rem; }
+
+/* (Fundo de marmore removido a pedido — ficou poluido.) */
+
+/* ===== Marca "Nous" (wordmark) — fonte serifada classica, no topo ===== */
+body::after {
+    content: "NOUS";
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding-left: 0.42em;            /* compensa o letter-spacing p/ centralizar */
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.42em;
+    color: var(--nous-gold);
+    opacity: 0.92;
+    z-index: 9999;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}

@@ -4,6 +4,17 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.3.0] - 2026-06-05
+### Adicionado
+- `installer/nous-setup.iss` -> **`dist/Nous-Setup.exe`** (~8 MB): instalador online
+  (Inno Setup) que baixa e configura tudo (Ollama, Python, Open WebUI, identidade),
+  cria atalhos e desinstalador. Assistente em portugues.
+- Marca **"Nous"** (wordmark) na interface, em fonte serifada classica (Cinzel).
+- `branding/make_marble.py`: gerador opcional de textura de marmore.
+### Mudado
+- Tema: removido o fundo de marmore (ficou poluido); mantidos os acentos dourados.
+- Sugestoes da tela inicial: on-brand em portugues por padrao.
+
 ## [1.2.0] - 2026-06-05
 ### Mudado
 - A instalacao **nao baixa mais o modelo** por padrao (setup leve, ~5-6 GB). O

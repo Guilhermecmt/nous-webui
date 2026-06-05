@@ -21,6 +21,9 @@ $env:ENABLE_RAG_WEB_SEARCH   = "True"
 $env:RAG_WEB_SEARCH_ENGINE   = "duckduckgo"
 $env:PORT                = "8080"
 
+# Sugestoes da tela inicial (substitui as genericas em ingles)
+$env:DEFAULT_PROMPT_SUGGESTIONS = '[{"title":["Resumir um texto","cole o conteudo e peca um resumo claro"],"content":"Resuma o texto a seguir de forma clara e objetiva:\n\n"},{"title":["Escrever um e-mail","profissional e direto"],"content":"Escreva um e-mail profissional sobre: "},{"title":["Explicar um conceito","de forma simples"],"content":"Explique de forma simples o conceito de: "},{"title":["Ideias criativas","para um projeto"],"content":"Me de 5 ideias criativas para: "}]'
+
 function Test-Up {
     try { return (Invoke-WebRequest "$url/health" -TimeoutSec 3 -UseBasicParsing).StatusCode -eq 200 }
     catch { return $false }
