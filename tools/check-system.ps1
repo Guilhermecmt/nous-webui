@@ -62,9 +62,13 @@ if ($problemas.Count -gt 0) {
 }
 elseif ($vramGB -ge $GPU_VRAM_GB) {
     Write-Host "VEREDITO: CAPAZ (GPU) - apta com aceleracao de GPU" -ForegroundColor Green
+    Write-Host "  Modelo recomendado: gemma4:12b" -ForegroundColor Green
+    Write-Host "  (baixe-o dentro do Nous: Admin > Settings > Models)" -ForegroundColor DarkGray
     exit 0
 }
 else {
     Write-Host "VEREDITO: CAPAZ (CPU) - roda, porem sem GPU sera mais lento" -ForegroundColor Yellow
+    Write-Host "  Modelo recomendado: gemma4:e4b (mais leve para CPU)" -ForegroundColor Yellow
+    Write-Host "  (baixe-o dentro do Nous: Admin > Settings > Models)" -ForegroundColor DarkGray
     exit 2
 }

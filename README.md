@@ -54,8 +54,12 @@ Ela retorna **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** (com o motivo) e um 
 powershell -ExecutionPolicy Bypass -File installer\install-nous.ps1
 ```
 Idempotente: checa a capacidade da maquina (e **aborta com erro claro se INCAPAZ**),
-instala Ollama + modelo + Python + Open WebUI **so se faltarem**, aplica a identidade
-Nous, cria o atalho e roda a verificacao de saude. Use `-Force` para reinstalar.
+instala Ollama + Python + Open WebUI **so se faltarem**, aplica a identidade Nous,
+cria o atalho e roda a verificacao de saude. Use `-Force` para reinstalar.
+
+> O **modelo de IA nao** e baixado na instalacao (isso deixa o setup leve, ~5-6 GB).
+> Voce baixa o modelo **dentro do app**, com barra de progresso — veja abaixo.
+> Para ja baixar na instalacao, use `-WithModel`.
 
 ### Manual (passo a passo)
 
@@ -76,6 +80,17 @@ Nous, cria o atalho e roda a verificacao de saude. Use `-Force` para reinstalar.
    ou compile para `.exe` sem janela: `launchers\build-exe.ps1`.
 
 > Um **instalador de 1 clique** com assistente de primeira execucao esta no [roadmap](docs/ROADMAP.md).
+
+## Primeiro uso: baixar um modelo
+
+O Nous instala a **plataforma** (sem o modelo, pra ser leve). Na primeira vez:
+
+1. Abra o Nous (atalho na area de trabalho) e crie sua conta.
+2. Va em **Admin Panel → Settings → Models**.
+3. Em **"Pull a model from Ollama.com"**, digite `gemma4:12b` e baixe — o
+   **progresso aparece na propria tela**. Rode `tools\check-system.ps1` para ver
+   qual modelo combina com a sua maquina (ex.: `gemma4:e4b` em maquinas sem GPU).
+4. Selecione o modelo no topo do chat e converse.
 
 ## Estrutura
 

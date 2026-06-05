@@ -4,6 +4,16 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.2.0] - 2026-06-05
+### Mudado
+- A instalacao **nao baixa mais o modelo** por padrao (setup leve, ~5-6 GB). O
+  modelo e baixado **dentro do app** (Open WebUI: Admin > Settings > Models), com
+  barra de progresso nativa. Use `install-nous.ps1 -WithModel` para baixar no setup.
+### Adicionado
+- `check-system.ps1` agora **recomenda o modelo** conforme o hardware
+  (gemma4:12b com GPU; gemma4:e4b em CPU).
+- `health-check.ps1`: ausencia de modelo passou a ser informativa (nao falha mais).
+
 ## [1.1.0] - 2026-06-05
 ### Adicionado
 - `installer/install-nous.ps1` — instalador idempotente de **1 comando**: porteiro de

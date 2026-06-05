@@ -19,6 +19,7 @@
 #>
 param(
     [switch]$Force,
+    [switch]$WithModel,                # baixar o modelo durante a instalacao (por padrao NAO)
     [string]$Model = "gemma4:12b"
 )
 $ErrorActionPreference = "Stop"
@@ -57,11 +58,18 @@ catch {
     Start-Sleep -Seconds 5; Ok "servico iniciado"
 }
 
-# 2) Modelo -----------------------------------------------------------------
-Step 2 "Modelo $Model"
+# 2) Modelo (baixado DENTRO do app, com progresso na tela) ------------------
+Step 2 "Modelo"
 $hasModel = [bool]((& $ollamaExe list 2>$null) -match [regex]::Escape($Model))
-if ($hasModel -and -not $Force) { Ok "ja baixado" }
-else { Info "baixando (pode levar varios minutos)..."; & $ollamaExe pull $Model; Ok "baixado" }
+if ($WithModel) {
+    if ($hasModel -and -not $Force) { Ok "$Model ja baixado" }
+    else { Info "baixando $Model (pode levar varios minutos)..."; & $ollamaExe pull $Model; Ok "baixado" }
+}
+elseif ($hasModel) { Ok "$Model ja presente" }
+else {
+    Info "pulado de proposito: o modelo e baixado DENTRO do Nous, com barra de"
+    Info "progresso na tela (Admin > Settings > Models). Recomendado: $Model."
+}
 
 # 3) Python 3.11 ------------------------------------------------------------
 Step 3 "Python 3.11"

@@ -31,7 +31,8 @@ Check "Servico Ollama no ar" $apiUp "API 11434 nao responde"
 
 $hasModel = $false
 if (Test-Path $ollamaExe) { $hasModel = [bool]((& $ollamaExe list 2>$null) -match [regex]::Escape($Model)) }
-Check "Modelo $Model presente" $hasModel "rode: ollama pull $Model"
+if ($hasModel) { Check "Modelo $Model presente" $true "" }
+else { Note "Modelo" "nenhum baixado ainda - baixe dentro do Nous (Settings > Models)" }
 
 Check "Open WebUI instalado" (Test-Path (Join-Path $venv "Scripts\open-webui.exe")) "ambiente/open-webui ausente"
 Check "Identidade Nous aplicada" (Test-Path (Join-Path $owDir "static\custom.css")) "rode branding\apply_branding.py"

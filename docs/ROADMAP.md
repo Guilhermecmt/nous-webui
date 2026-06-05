@@ -15,7 +15,9 @@ sem conhecimento tecnico, com tudo acontecendo em segundo plano.
   1. **Porteiro de capacidade** — roda `check-system.ps1`; se **INCAPAZ**, mostra
      um erro claro (RAM/VRAM/disco) e aborta antes de baixar qualquer coisa.
   2. Instala o **Ollama** silenciosamente (winget/instalador, sem janelas).
-  3. Baixa o **gemma4:12b** com barra de progresso amigavel.
+  3. O **modelo** NAO e baixado na instalacao — fica para **dentro do app**
+     (Open WebUI: Admin > Settings > Models), com progresso nativo na tela.
+     Mantem o setup leve (~5-6 GB) e deixa o usuario escolher o modelo.
   4. Cria o ambiente **Python 3.11** + instala o **Open WebUI**.
   5. Aplica a **identidade Nous** (`apply_branding.py`).
   6. Cria atalhos (Iniciar/Parar Nous) e configura inicio automatico opcional.
