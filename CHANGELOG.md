@@ -4,6 +4,15 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-06-05
+### Adicionado
+- `installer/install-nous.ps1` — instalador idempotente de **1 comando**: porteiro de
+  capacidade (aborta se INCAPAZ) -> Ollama -> modelo -> Python 3.11 -> Open WebUI ->
+  identidade Nous -> atalho + launcher oculto -> verificacao. Pula o que ja existe;
+  `-Force` reinstala.
+- `tools/health-check.ps1` — verificacao pos-instalacao (Ollama no ar, modelo presente,
+  ambiente, identidade aplicada, servidor respondendo) com codigo de saida.
+
 ## [1.0.0] - 2026-06-04
 ### Adicionado
 - Identidade visual **Nous**: logo da coruja imperial dourada, favicons (png/svg/ico)

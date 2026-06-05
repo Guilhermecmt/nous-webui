@@ -47,7 +47,17 @@ powershell -ExecutionPolicy Bypass -File tools\check-system.ps1
 
 Ela retorna **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** (com o motivo) e um codigo de saida.
 
-## Instalacao (resumo)
+## Instalacao
+
+### Automatica (1 comando) — recomendada
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\install-nous.ps1
+```
+Idempotente: checa a capacidade da maquina (e **aborta com erro claro se INCAPAZ**),
+instala Ollama + modelo + Python + Open WebUI **so se faltarem**, aplica a identidade
+Nous, cria o atalho e roda a verificacao de saude. Use `-Force` para reinstalar.
+
+### Manual (passo a passo)
 
 1. **Ollama** — https://ollama.com  → `ollama pull gemma4:12b`
 2. **Python 3.11** + ambiente:
