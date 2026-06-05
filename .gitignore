@@ -1,0 +1,50 @@
+# ============================================================
+#  Nous WebUI - .gitignore
+#  IMPORTANTE: mantem segredos e dados pessoais FORA do repositorio.
+# ============================================================
+
+# --- Dados privados / backups (contem conversas, conta, senha) ---
+bkp/*
+!bkp/.gitkeep
+*.zip
+*.db
+*.db-shm
+*.db-wal
+NousData/
+
+# --- Artefatos de build ---
+*.exe
+launchers/Nous.exe
+launchers/Parar Nous.exe
+branding/assets/nous.ico
+
+# --- Logs ---
+*.log
+serve-log.txt
+install-log.txt
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Ambiente Open WebUI (nunca versionar o venv) ---
+open-webui/
+Lib/
+Scripts/
+Include/
+share/
+pyvenv.cfg
+
+# --- Segredos / config local ---
+*.local
+.env
+config.local.*
+
+# --- Sistema operacional ---
+Thumbs.db
+desktop.ini
+.DS_Store

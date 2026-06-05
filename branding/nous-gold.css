@@ -1,0 +1,46 @@
+/* =====================================================================
+   Nous — Tema "Branco & Ouro" (camada de CSS customizada)
+   Carregado automaticamente pelo Open WebUI via /static/custom.css
+   Edite e rode  branding/apply_branding.py  para reaplicar.
+   ===================================================================== */
+
+:root {
+    --nous-gold: #c8962e;        /* ouro principal */
+    --nous-gold-deep: #a9781f;   /* ouro escuro (hover) */
+    --nous-gold-soft: #e7c977;   /* ouro claro */
+}
+
+/* Acento dourado nos controles nativos (checkbox, radio, range, progress) */
+* { accent-color: var(--nous-gold); }
+
+/* Selecao de texto dourada */
+::selection { background: var(--nous-gold-soft); color: #2a2110; }
+
+/* Barra de rolagem dourada e discreta */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--nous-gold-soft); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--nous-gold); }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Links em ouro escuro */
+a:not(.no-gold) { color: var(--nous-gold-deep); }
+
+/* Foco dourado em campos */
+input:focus, textarea:focus, select:focus { outline-color: var(--nous-gold) !important; }
+.ring-2 { --tw-ring-color: var(--nous-gold) !important; }
+
+/* Botoes primarios (preto/cinza-escuro -> ouro) */
+button.bg-black,
+button.bg-gray-900,
+button.bg-gray-850 {
+    background-color: var(--nous-gold) !important;
+    color: #ffffff !important;
+    transition: background-color 0.2s ease;
+}
+button.bg-black:hover,
+button.bg-gray-900:hover,
+button.bg-gray-850:hover { background-color: var(--nous-gold-deep) !important; }
+
+/* Cantos um pouco mais suaves (toque "Apple") */
+.rounded-xl { border-radius: 1rem; }
+.rounded-2xl { border-radius: 1.25rem; }
