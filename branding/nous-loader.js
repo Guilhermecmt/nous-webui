@@ -220,22 +220,44 @@
 		return p === '/' || p === '' || p === '/index.html';
 	}
 
-	/* Injeta o wordmark "NOUS" abaixo da coruja na tela inicial.
-	   O CSS suprime o body::after fixo quando este elemento esta' presente,
-	   mantendo os dois sempre alinhados. */
-	function injectHomeWordmark() {
-		var wm = document.querySelector('.nous-home-wordmark');
-		if (!onHome()) {
-			if (wm) wm.remove();
+	/* Coloca o wordmark "NOUS" no topo, DENTRO do painel de conteudo (o irmao
+	   da barra lateral). Sendo filho do painel, ele acompanha a animacao de
+	   abrir/fechar a barra lateral via CSS puro -> centralizado e SEM delay.
+	   #nous-mark-anchor tem height 0 (nao empurra nada); o NOUS fica absolute
+	   no topo dele. Na tela de login (sem #sidebar) usa-se o body::after. */
+	function ensureTopWordmark() {
+		var sidebar = document.getElementById('sidebar');
+		var anchor = document.getElementById('nous-mark-anchor');
+		if (!sidebar || !sidebar.parentElement) {        // login / sem shell
+			if (anchor) anchor.remove();
+			document.body.classList.remove('nous-shell-mark');
 			return;
 		}
-		if (wm) return;
-		var owlRow = document.querySelector('.flex.flex-row.justify-center.max-w-xl');
-		if (!owlRow || !owlRow.querySelector('img.rounded-full')) return;
-		var div = document.createElement('div');
-		div.className = 'nous-home-wordmark';
-		div.textContent = 'NOUS';
-		owlRow.parentNode.insertBefore(div, owlRow.nextSibling);
+		var shell = sidebar.parentElement;
+		var content = null, maxW = -1;                    // painel = irmao mais largo
+		for (var i = 0; i < shell.children.length; i++) {
+			var c = shell.children[i];
+			if (c === sidebar) continue;
+			var w = c.getBoundingClientRect().width;
+			if (w > maxW) { maxW = w; content = c; }
+		}
+		if (!content || maxW <= 0) {
+			if (anchor) anchor.remove();
+			document.body.classList.remove('nous-shell-mark');
+			return;
+		}
+		if (!anchor) {
+			anchor = document.createElement('div');
+			anchor.id = 'nous-mark-anchor';
+			var wm = document.createElement('div');
+			wm.id = 'nous-home-wordmark';
+			wm.textContent = 'NOUS';
+			anchor.appendChild(wm);
+		}
+		/* mantem como 1o filho do painel (so' re-insere em troca de rota, nunca
+		   no toggle da barra -> sem disputa com o Svelte no caso que importa) */
+		if (content.firstChild !== anchor) content.insertBefore(anchor, content.firstChild);
+		document.body.classList.add('nous-shell-mark');
 	}
 
 	function tick() {
@@ -243,7 +265,7 @@
 		if (btn) btn.style.display = onHome() ? 'flex' : 'none';
 		paintToggle();
 		buildMonitor();
-		injectHomeWordmark();
+		ensureTopWordmark();
 	}
 
 	function start() {

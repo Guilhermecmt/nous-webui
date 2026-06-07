@@ -130,25 +130,35 @@ body:has(#auth-page)::after {
     height: auto !important;
 }
 
-/* ===== Tela inicial (novo chat): wordmark junto da coruja =====
-   O JS injeta .nous-home-wordmark abaixo da coruja; aqui suprimimos o
-   body::after fixo (que fica longe) para evitar duplicacao. */
-body:has(.flex.flex-row.justify-center.max-w-xl img.rounded-full)::after {
-    opacity: 0;
-}
+/* ===== Wordmark "NOUS" no topo, DENTRO do painel de conteudo =====
+   O body::after fixo e' centrado na viewport -> desalinha quando a barra
+   lateral abre/fecha. Em vez disso, o loader.js injeta #nous-mark-anchor como
+   1o filho do painel de conteudo (irmao da barra lateral). Sendo filho do
+   painel, o wordmark acompanha a animacao da barra via CSS PURO, sem delay.
+   O body::after fica reservado so' para a tela de login. */
+body.nous-shell-mark::after { opacity: 0; }
 
-/* Wordmark injetado pelo JS abaixo da coruja na tela inicial */
-.nous-home-wordmark {
+#nous-mark-anchor {
+    position: relative;   /* contexto de posicionamento; height 0 = nao ocupa espaco */
+    width: 100%;
+    height: 0;
+    z-index: 30;
+    pointer-events: none;
+}
+#nous-home-wordmark {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);   /* centra no painel de conteudo, nao na viewport */
     font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
     font-weight: 600;
-    font-size: 20px;
+    font-size: 18px;
     letter-spacing: 0.42em;
-    padding-left: 0.42em;
+    padding-left: 0.42em;          /* compensa o letter-spacing p/ centralizar */
     color: var(--nous-gold);
     opacity: 0.92;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-    margin-top: 12px;
-    text-align: center;
     user-select: none;
     pointer-events: none;
+    white-space: nowrap;
 }
