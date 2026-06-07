@@ -25,6 +25,11 @@ DESC = (
 )
 
 
+def comfy_installed():
+    """ComfyUI instalado? (padrao: %USERPROFILE%\\ComfyUI\\main.py)."""
+    return os.path.isfile(os.path.join(os.path.expanduser("~"), "ComfyUI", "main.py"))
+
+
 def resolve_db(data_dir):
     candidates = []
     if data_dir:
@@ -103,6 +108,11 @@ def main():
             "SELECT user_id FROM function WHERE id=?", (FUNC_ID,)
         ).fetchone()
 
+        # So' fica ATIVO (aparece no dropdown) se o ComfyUI estiver instalado.
+        # Sem isso, o 'Gerador de Imagem Local' apareceria quebrado. Auto-cura:
+        # instalou o ComfyUI depois -> proximo boot ativa; removeu -> desativa.
+        active = 1 if comfy_installed() else 0
+
         if row:
             user_id = row[0]
             if (user_id in (None, "", "nous-system")) and creator != "nous-system":
@@ -110,9 +120,9 @@ def main():
             cx.execute(
                 """UPDATE function
                    SET name=?, type='pipe', content=?, meta=?,
-                       is_active=1, is_global=0, user_id=?, updated_at=?
+                       is_active=?, is_global=0, user_id=?, updated_at=?
                    WHERE id=?""",
-                (FUNC_NAME, content, meta, user_id, now, FUNC_ID),
+                (FUNC_NAME, content, meta, active, user_id, now, FUNC_ID),
             )
             action = "atualizado"
         else:
@@ -122,12 +132,13 @@ def main():
                     is_active, is_global, updated_at, created_at)
                    VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (FUNC_ID, creator, FUNC_NAME, "pipe", content, meta, None,
-                 1, 0, now, now),
+                 active, 0, now, now),
             )
             action = "instalado"
 
         cx.commit()
-        print(f"Pipe '{FUNC_NAME}' {action} e ativo (id='{FUNC_ID}').")
+        estado = "ativo" if active else "inativo (instale o ComfyUI para ativar)"
+        print(f"Pipe '{FUNC_NAME}' {action} - {estado} (id='{FUNC_ID}').")
     finally:
         cx.close()
 

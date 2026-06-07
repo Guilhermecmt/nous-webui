@@ -20,8 +20,9 @@ search/search_cache.sqlite
 *.exe
 launchers/Nous.exe
 launchers/Parar Nous.exe
-branding/assets/nous.ico
 dist/
+# nous.ico e' versionado de proposito (icone do atalho, sempre disponivel
+# mesmo sem ps2exe/PIL na maquina de quem instala).
 
 # --- Texturas de marmore (geradas; nao usadas no tema padrao) ---
 branding/assets/marble*.png
