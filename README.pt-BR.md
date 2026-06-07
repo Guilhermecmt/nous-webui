@@ -185,15 +185,12 @@ python tools\reset-password.py --email voce@exemplo.com   # esqueci a senha
 
 ## Desinstalar
 
-Dê clique duplo em **`desinstalar.bat`**. Por padrão ele remove só o app Nous isolado (o ambiente Python, o atalho da área de trabalho e os launchers) e **preserva** seus dados (`NousData`), suas notas em `Documentos\Nous` e as ferramentas compartilhadas (Ollama, Python) que outros programas podem usar.
+Dê clique duplo em **`desinstalar.bat`** e escolha uma opção:
 
-Para remover tudo — incluindo dados, Ollama e Python:
+- **[1] Remoção segura** — remove só o app Nous isolado (o ambiente Python, o atalho e os launchers) e **preserva** seus dados (`NousData`), suas notas em `Documentos\Nous` e as ferramentas compartilhadas (Ollama, Python).
+- **[2] Remover tudo** — também apaga seus dados e desinstala Ollama/Python.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File installer\uninstall-nous.ps1 -All
-```
-
-Ele lê o manifesto de instalação e só remove Ollama/Python **se foi o Nous que os instalou** — um Ollama/Python que já existia nunca é tocado (force com `-Force`).
+Ele lê o manifesto de instalação, então Ollama/Python só são removidos **se foi o Nous que os instalou** — um Ollama/Python que já existia nunca é tocado. (Avançado, de dentro da pasta: `installer\uninstall-nous.ps1 -All` ou `-Force`.)
 
 ## Estrutura
 
