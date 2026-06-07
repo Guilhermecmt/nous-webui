@@ -220,11 +220,30 @@
 		return p === '/' || p === '' || p === '/index.html';
 	}
 
+	/* Injeta o wordmark "NOUS" abaixo da coruja na tela inicial.
+	   O CSS suprime o body::after fixo quando este elemento esta' presente,
+	   mantendo os dois sempre alinhados. */
+	function injectHomeWordmark() {
+		var wm = document.querySelector('.nous-home-wordmark');
+		if (!onHome()) {
+			if (wm) wm.remove();
+			return;
+		}
+		if (wm) return;
+		var owlRow = document.querySelector('.flex.flex-row.justify-center.max-w-xl');
+		if (!owlRow || !owlRow.querySelector('img.rounded-full')) return;
+		var div = document.createElement('div');
+		div.className = 'nous-home-wordmark';
+		div.textContent = 'NOUS';
+		owlRow.parentNode.insertBefore(div, owlRow.nextSibling);
+	}
+
 	function tick() {
 		ensureToggle();
 		if (btn) btn.style.display = onHome() ? 'flex' : 'none';
 		paintToggle();
 		buildMonitor();
+		injectHomeWordmark();
 	}
 
 	function start() {
