@@ -47,6 +47,15 @@ switch ($LASTEXITCODE) {
     2 { Info "Sem GPU adequada: vai funcionar na CPU (mais lento)." }
 }
 
+# 0.5) Pre-requisito: winget (App Installer) --------------------------------
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "`nO 'winget' (App Installer) nao foi encontrado nesta maquina." -ForegroundColor Red
+    Write-Host "Ele ja vem no Windows 10/11 atualizado. Instale o 'App Installer'" -ForegroundColor Yellow
+    Write-Host "pela Microsoft Store e rode o instalador de novo:" -ForegroundColor Yellow
+    Write-Host "  https://apps.microsoft.com/detail/9NBLGGH4NNS1" -ForegroundColor Cyan
+    exit 1
+}
+
 # 1) Ollama -----------------------------------------------------------------
 Step 1 "Ollama"
 if ((Test-Path $ollamaExe) -and -not $Force) { Ok "ja instalado" }

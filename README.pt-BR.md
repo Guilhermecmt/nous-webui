@@ -82,6 +82,16 @@ Retorna **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** com o motivo.
 
 ## Começo rápido
 
+### Mais fácil — baixar e dar clique duplo (recomendado)
+
+1. Use o botão verde **Code → Download ZIP** no topo desta página (ou `git clone`).
+2. Descompacte em qualquer lugar.
+3. Abra a pasta e **dê clique duplo em `instalar.bat`**.
+
+Pronto. Ele analisa a máquina, instala Ollama + Python + Open WebUI, aplica a identidade Nous e cria um atalho na área de trabalho — sem precisar abrir o PowerShell nem mudar nenhuma configuração. Se o Windows mostrar um aviso, escolha **Sim / Executar assim mesmo**.
+
+> Os comandos de PowerShell abaixo são para usuários avançados e precisam ser rodados **de dentro da pasta do Nous** (caminhos relativos como `tools\check-system.ps1` só funcionam ali).
+
 ### Opção A — Instalador (`.exe`) · para usuários finais
 
 `installer\nous-setup.iss` gera o **`Nous-Setup.exe`** (Inno Setup): um instalador online pequeno que baixa e configura tudo, cria atalhos e um desinstalador. Compile com `ISCC.exe installer\nous-setup.iss` → `dist\Nous-Setup.exe`.  

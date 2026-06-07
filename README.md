@@ -82,6 +82,16 @@ It prints **CAPABLE (GPU)**, **CAPABLE (CPU)** or **NOT CAPABLE** with the reaso
 
 ## Quick start
 
+### Easiest — download and double-click (recommended)
+
+1. Use the green **Code → Download ZIP** button at the top of this page (or `git clone`).
+2. Unzip it anywhere.
+3. Open the folder and **double-click `instalar.bat`**.
+
+That's all. It checks your machine, installs Ollama + Python + Open WebUI, applies the Nous identity and creates a desktop shortcut — no need to touch PowerShell or change any setting. If Windows shows a prompt, choose **Yes / Run anyway**.
+
+> The PowerShell commands below are for advanced users and must be run **from inside the Nous folder** (the relative paths like `tools\check-system.ps1` only resolve there).
+
 ### Option A — Installer (`.exe`) · for end users
 
 `installer\nous-setup.iss` builds **`Nous-Setup.exe`** (Inno Setup): a small online installer that downloads and configures everything, creates shortcuts and an uninstaller. Build it with `ISCC.exe installer\nous-setup.iss` → `dist\Nous-Setup.exe`.  
