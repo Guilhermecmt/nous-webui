@@ -27,6 +27,7 @@ No cloud. No API keys. Nothing ever leaves your machine.
 **Nous** (Greek *νοῦς*, "mind / intellect") turns a local **Ollama + Open WebUI** stack into a polished, private product with its own identity — a calm **White & Gold** theme, an owl mark, and several things the raw stack does not give you:
 
 - **Truly private** — the model and every conversation stay on your computer.
+- **Remembers you** — learns durable facts about you across conversations and recalls them automatically, on-device. The one thing cloud AI can't safely do.
 - **Beautiful by default** — custom theme, logo, light/dark toggle, on-brand UI.
 - **Generate images locally** — type *"create an image of…"* and it appears inline in the chat, powered by ComfyUI + Flux. No subscriptions.
 - **Vision** — drop a screenshot or photo and ask about it; the model actually sees it.
@@ -137,6 +138,14 @@ A small **Recursos** card (bottom-left) polls a tiny local service (`monitor/nou
 - a **"Stop models"** button that frees the VRAM instantly.
 
 The launcher starts it automatically; models leave VRAM **30 s** after the last message (configurable).
+
+---
+
+## Memory — Nous remembers you
+
+Nous keeps a personal memory that lives **only on your machine** (`memory/nous_memory.py`, a global Open WebUI filter). As you chat, it quietly learns durable facts about you — your name, where you live, your work, your preferences — and recalls them in later conversations. A small *"Nous remembered N detail(s) about you"* status shows when it does.
+
+It installs itself automatically on launch (no import, no admin panel) and stores everything in `nous_memory.sqlite3` inside your data folder, which is gitignored. This is the first step of what makes Nous different: *a cloud AI can be smart; only a local AI can truly be yours.*
 
 ---
 

@@ -8,6 +8,7 @@ $ErrorActionPreference = "SilentlyContinue"
 
 $venv = Join-Path $env:USERPROFILE "open-webui"
 $exe  = Join-Path $venv "Scripts\open-webui.exe"
+$py   = Join-Path $venv "Scripts\python.exe"
 $url  = "http://localhost:8080"
 
 # --- Configuracao ---
@@ -47,8 +48,17 @@ function Test-Up {
     catch { return $false }
 }
 
-# Ja esta rodando? So abre o navegador.
-if (Test-Up) { Start-Process $url; return }
+# Garante a memoria nativa (Filter global e ativo) registrada no banco.
+# Idempotente, sem login: re-sincroniza nous_memory.py a cada inicio.
+function Register-Memory {
+    $reg = Join-Path $PSScriptRoot "..\memory\register_memory.py"
+    if ((Test-Path $py) -and (Test-Path $reg)) {
+        & $py "$reg" --data-dir "$env:DATA_DIR" | Out-Null
+    }
+}
+
+# Ja esta rodando? Garante a memoria e abre o navegador.
+if (Test-Up) { Register-Memory; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -62,15 +72,14 @@ catch {
 Start-Process -FilePath $exe -ArgumentList "serve" -WindowStyle Hidden
 
 # Sobe o Nous Monitor (painel de VRAM / modelos) em segundo plano
-$py      = Join-Path $venv "Scripts\python.exe"
 $monitor = Join-Path $PSScriptRoot "..\monitor\nous_monitor.py"
 if ((Test-Path $py) -and (Test-Path $monitor)) {
     try { Invoke-RestMethod "http://127.0.0.1:8990/health" -TimeoutSec 2 | Out-Null }
     catch { Start-Process -FilePath $py -ArgumentList "`"$monitor`"" -WindowStyle Hidden }
 }
 
-# Espera ficar pronto e abre o navegador
+# Espera ficar pronto, garante a memoria nativa e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Start-Process $url; break }
+    if (Test-Up) { Register-Memory; Start-Process $url; break }
 }

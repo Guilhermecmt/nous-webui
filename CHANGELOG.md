@@ -4,6 +4,23 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.5.0] - 2026-06-07
+### Adicionado
+- **Memoria pessoal persistente e 100% local** (`memory/nous_memory.py`): o Nous
+  **lembra de voce entre conversas**. E' um Filter global do Open WebUI -
+  `inlet` injeta no contexto o que ele ja sabe; `outlet` extrai novos fatos com o
+  Ollama local e salva em `nous_memory.sqlite3` (dentro do `NousData`, gitignored).
+  Captura fatos duraveis (nome, cidade, trabalho, gostos) e acontecimentos do dia
+  a dia (com data). Mostra status na tela: *"Nous lembrou de N detalhe(s)..."*.
+- **Auto-instalacao da memoria** (`memory/register_memory.py`): grava a funcao
+  direto no banco como Filter **global e ativo** - sem login, sem painel, sem
+  importar nada. O launcher roda isso a cada inicio (idempotente; re-sincroniza o
+  codigo). E' o primeiro passo do diferencial do Nous: *uma IA na nuvem pode ser
+  inteligente; so' uma IA local pode ser realmente sua.*
+### Corrigido
+- A memoria agora e' **mesclada no system message existente** em vez de criar um
+  segundo (que o Ollama descartava) - sem isto, o recall nao chegava ao modelo.
+
 ## [1.4.0] - 2026-06-06
 ### Adicionado
 - **Geracao de imagem local** (ComfyUI + Flux.1 Schnell): peca *"crie uma imagem

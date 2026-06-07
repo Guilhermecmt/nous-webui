@@ -27,6 +27,7 @@ Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 **Nous** (do grego *νοῦς*, "mente / intelecto") transforma o conjunto local **Ollama + Open WebUI** num produto próprio, bonito e privado — tema sereno **Branco & Ouro**, a marca da coruja e algumas coisas que o conjunto cru não entrega:
 
 - **Realmente privado** — o modelo e todas as conversas ficam no seu computador.
+- **Lembra de você** — aprende fatos duráveis sobre você ao longo das conversas e os recupera sozinho, no seu PC. O que a nuvem não pode fazer com segurança.
 - **Bonito por padrão** — tema, logo, alternância claro/escuro, UI com identidade.
 - **Gera imagens localmente** — peça *"crie uma imagem de…"* e ela aparece inline no chat, via ComfyUI + Flux. Sem assinatura.
 - **Visão** — solte um print ou foto e pergunte; o modelo realmente vê a imagem.
@@ -137,6 +138,14 @@ Um pequeno card **Recursos** (canto inferior esquerdo) consulta um micro-serviç
 - um botão **"Parar modelos"** que libera a VRAM na hora.
 
 O launcher sobe o serviço automaticamente; os modelos saem da VRAM **30 s** após a última mensagem (configurável).
+
+---
+
+## Memória — o Nous lembra de você
+
+O Nous mantém uma memória pessoal que vive **só na sua máquina** (`memory/nous_memory.py`, um filter global do Open WebUI). Conforme você conversa, ele aprende fatos duráveis sobre você — nome, cidade, trabalho, gostos — e os recupera nas conversas seguintes. Um status *"Nous lembrou de N detalhe(s) sobre você"* aparece quando isso acontece.
+
+Ela se instala sozinha ao abrir (sem importar nada, sem painel) e guarda tudo em `nous_memory.sqlite3` dentro da sua pasta de dados, que é gitignored. É o primeiro passo do que torna o Nous diferente: *uma IA na nuvem pode ser inteligente; só uma IA local pode ser realmente sua.*
 
 ---
 
