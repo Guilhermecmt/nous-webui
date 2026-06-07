@@ -37,6 +37,38 @@ function Step($n, $t) { Write-Host "`n[$n] $t" -ForegroundColor Cyan }
 function Ok($t)       { Write-Host "    [ok] $t" -ForegroundColor Green }
 function Info($t)     { Write-Host "    $t" -ForegroundColor DarkGray }
 
+# --- Deteccao robusta: NAO rebaixar o que ja existe, mesmo instalado por
+#     outro metodo/local (PATH, locais comuns, serviço no ar). ---
+function Find-Ollama {
+    $c = Get-Command ollama -ErrorAction SilentlyContinue
+    if ($c) { return $c.Source }
+    foreach ($p in @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"),
+        (Join-Path $env:ProgramFiles  "Ollama\ollama.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Ollama\ollama.exe"))) {
+        if ($p -and (Test-Path $p)) { return $p }
+    }
+    return $null
+}
+function Test-OllamaUp {
+    try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null; return $true }
+    catch { return $false }
+}
+function Find-Py311 {
+    # Open WebUI exige Python 3.11 (nao 3.12+). Procura qualquer 3.11 ja' presente.
+    try {
+        $v = & py -3.11 -c "import sys; sys.stdout.write(sys.executable)" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $v) { return $v.Trim() }
+    } catch {}
+    foreach ($p in @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Python\Python311\python.exe"),
+        "C:\Python311\python.exe",
+        (Join-Path $env:ProgramFiles "Python311\python.exe"))) {
+        if (Test-Path $p) { return $p }
+    }
+    return $null
+}
+
 Write-Host "================ Instalador do Nous ================" -ForegroundColor Yellow
 
 # 0) Porteiro de capacidade -------------------------------------------------
@@ -58,24 +90,29 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 # 1) Ollama -----------------------------------------------------------------
 Step 1 "Ollama"
-if ((Test-Path $ollamaExe) -and -not $Force) { Ok "ja instalado" }
-else {
+$ollamaExe = Find-Ollama
+if (($ollamaExe -or (Test-OllamaUp)) -and -not $Force) {
+    Ok "ja instalado - nao vou baixar de novo$(if ($ollamaExe) { " ($ollamaExe)" })"
+} else {
     Info "instalando via winget (silencioso)..."
     winget install --id Ollama.Ollama -e --accept-package-agreements --accept-source-agreements --silent | Out-Null
+    $ollamaExe = Find-Ollama
     Ok "instalado"
 }
-try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null; Ok "servico no ar" }
-catch {
-    if (Test-Path $ollamaApp) { Start-Process $ollamaApp -WindowStyle Hidden }
-    Start-Sleep -Seconds 5; Ok "servico iniciado"
+if (-not (Test-OllamaUp)) {
+    if (Test-Path $ollamaApp)   { Start-Process $ollamaApp -WindowStyle Hidden }
+    elseif ($ollamaExe)         { Start-Process $ollamaExe -ArgumentList "serve" -WindowStyle Hidden }
+    Start-Sleep -Seconds 5
 }
+if (Test-OllamaUp) { Ok "servico no ar" } else { Info "servico nao respondeu ainda (confira o Ollama)" }
 
 # 2) Modelo (baixado DENTRO do app, com progresso na tela) ------------------
 Step 2 "Modelo"
-$hasModel = [bool]((& $ollamaExe list 2>$null) -match [regex]::Escape($Model))
+$ollamaCmd = if ($ollamaExe) { $ollamaExe } else { "ollama" }
+$hasModel = [bool]((& $ollamaCmd list 2>$null) -match [regex]::Escape($Model))
 if ($WithModel) {
     if ($hasModel -and -not $Force) { Ok "$Model ja baixado" }
-    else { Info "baixando $Model (pode levar varios minutos)..."; & $ollamaExe pull $Model; Ok "baixado" }
+    else { Info "baixando $Model (pode levar varios minutos)..."; & $ollamaCmd pull $Model; Ok "baixado" }
 }
 elseif ($hasModel) { Ok "$Model ja presente" }
 else {
@@ -85,12 +122,14 @@ else {
 
 # 3) Python 3.11 ------------------------------------------------------------
 Step 3 "Python 3.11"
-$py311 = Join-Path $env:LOCALAPPDATA "Programs\Python\Python311\python.exe"
-if (Test-Path $py311) { Ok "ja instalado" }
+$py311 = Find-Py311
+if ($py311 -and -not $Force) { Ok "ja instalado - nao vou baixar de novo ($py311)" }
 else {
     Info "instalando via winget..."
     winget install --id Python.Python.3.11 -e --accept-package-agreements --accept-source-agreements --silent | Out-Null
-    Ok "instalado"
+    $py311 = Find-Py311
+    if ($py311) { Ok "instalado" }
+    else { Write-Host "    [erro] Python 3.11 nao encontrado apos a instalacao." -ForegroundColor Red; exit 1 }
 }
 
 # 4) Ambiente + Open WebUI --------------------------------------------------
