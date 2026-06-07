@@ -27,6 +27,10 @@ $env:RAG_WEB_SEARCH_ENGINE   = "duckduckgo"
 # embedding) - sem isto, o Gemma responde "nao tenho acesso em tempo real".
 $env:BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL = "True"
 $env:PORT                = "8080"
+# UX p/ leigos: tira o "Arena Model" (confunde) e ja' deixa o gemma4:12b
+# pre-selecionado no chat novo, para o usuario nao precisar escolher nada.
+$env:ENABLE_EVALUATION_ARENA_MODELS = "False"
+$env:DEFAULT_MODELS                 = "gemma4:12b"
 
 # Chave secreta ESTAVEL: sem ela, o open-webui gera uma nova a cada inicio e
 # desloga voce. Guardamos uma chave local (em NousData, fora do git) e a reusamos.
@@ -66,8 +70,63 @@ function Register-Pipe {
     }
 }
 
+# --- Acesso aos seus arquivos (Fase 2): RAG local sobre uma pasta sua ---
+
+# Garante a pasta a indexar: usa a config existente OU cria a pasta padrao 'Nous'
+# em Documentos (resolve o caminho real, mesmo com OneDrive) e grava a config.
+# Para apontar p/ o Obsidian: edite nous_files.json ou use o valve do Nous Files.
+function Ensure-FilesFolder {
+    $cfg = Join-Path $env:DATA_DIR "nous_files.json"
+    $folder = $null
+    if (Test-Path $cfg) {
+        try { $folder = (Get-Content $cfg -Raw | ConvertFrom-Json).folder } catch {}
+    }
+    if (-not $folder) {
+        $docs = [Environment]::GetFolderPath('MyDocuments')
+        if (-not $docs) { $docs = Join-Path $env:USERPROFILE "Documents" }
+        $folder = Join-Path $docs "Nous"
+        New-Item -ItemType Directory -Force -Path $folder    | Out-Null
+        New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
+        # WriteAllText = UTF-8 SEM BOM (Set-Content -Encoding UTF8 poe BOM no PS 5.1)
+        [IO.File]::WriteAllText($cfg, (@{ folder = $folder } | ConvertTo-Json))
+    }
+}
+
+# Garante o modelo de embeddings (busca semantica nos arquivos). Baixa so' se faltar.
+function Ensure-EmbedModel {
+    try {
+        $tags = Invoke-RestMethod "http://127.0.0.1:11434/api/tags" -TimeoutSec 5
+        $has = $false
+        foreach ($m in $tags.models) { if ($m.name -match "nomic-embed-text") { $has = $true } }
+        if (-not $has) {
+            $ollamaExe = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
+            if (-not (Test-Path $ollamaExe)) { $ollamaExe = "ollama" }
+            Start-Process -FilePath $ollamaExe -ArgumentList "pull nomic-embed-text" -WindowStyle Hidden
+        }
+    } catch {}
+}
+
+# Sobe o indexador (modo watch) em segundo plano. Ele mesmo evita duplicar (lock),
+# le a pasta da config a cada ciclo e reindexa o que mudou (~20s).
+function Start-Indexer {
+    $idx = Join-Path $PSScriptRoot "..\files\index_files.py"
+    if ((Test-Path $py) -and (Test-Path $idx)) {
+        Start-Process -FilePath $py -ArgumentList "`"$idx`" --data-dir `"$env:DATA_DIR`"" -WindowStyle Hidden
+    }
+}
+
+# Garante o filtro Nous Files registrado no banco (Filter global e ativo, sem login).
+function Register-Files {
+    $reg = Join-Path $PSScriptRoot "..\files\register_files.py"
+    if ((Test-Path $py) -and (Test-Path $reg)) {
+        & $py "$reg" --data-dir "$env:DATA_DIR" | Out-Null
+    }
+}
+
+function Setup-Files { Ensure-FilesFolder; Ensure-EmbedModel; Start-Indexer; Register-Files }
+
 # Ja esta rodando? Garante funcoes nativas e abre o navegador.
-if (Test-Up) { Register-Memory; Register-Pipe; Start-Process $url; return }
+if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -90,5 +149,5 @@ if ((Test-Path $py) -and (Test-Path $monitor)) {
 # Espera ficar pronto, garante funcoes nativas e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Register-Memory; Register-Pipe; Start-Process $url; break }
+    if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Start-Process $url; break }
 }

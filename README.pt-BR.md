@@ -9,7 +9,7 @@
 Chat · Visão · Geração de imagem local · Busca na web — 100% no seu PC.  
 Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 
-[![version](https://img.shields.io/badge/version-1.5.1-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.6.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requisitos)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20privado-2ea44f)](#por-que-o-nous)
@@ -34,6 +34,7 @@ Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 - **Busca na web** — opcional, via DuckDuckGo. Sem chave de API.
 - **Painel de recursos** — VRAM / memória compartilhada em tempo real, modelos carregados e um botão para liberar a placa na hora.
 - **Roda em segundo plano** — sem janelas de terminal; abre por um atalho.
+- **Lê seus arquivos** — aponte para o seu vault do Obsidian (ou qualquer pasta de notas) e o Nous busca automaticamente os trechos mais relevantes dos seus `.md`/`.txt` e os injeta em cada conversa. Busca híbrida semântica + palavra-chave, 100 % local.
 
 > Este repositório traz a **identidade + ferramentas** (tema, launchers, instaladores, o pipeline de imagem, o monitor). O motor (Ollama, Python/Open WebUI, o modelo) é instalado pelos scripts abaixo.
 
@@ -158,6 +159,19 @@ Ela se instala sozinha ao abrir (sem importar nada, sem painel) e guarda tudo em
 
 ---
 
+## Arquivos — o Nous lê suas anotações
+
+Aponte o Nous para uma pasta (seu vault do Obsidian, uma pasta `Documentos\Nous`, qualquer coisa com `.md`/`.txt`) e ele buscará nas suas notas antes de cada resposta, injetando os trechos mais relevantes no contexto da conversa.
+
+- **Busca híbrida** — combina embeddings semânticos (`nomic-embed-text` via Ollama) com busca por palavra-chave FTS5, fundidos por Reciprocal Rank Fusion.
+- **Totalmente incremental** — o indexador em segundo plano (`files/index_files.py`) só reindexa arquivos que realmente mudaram.
+- **Auto-configurável** — ao primeiro boot o Nous cria `Documentos\Nous`; você pode apontar para outra pasta pelo valve `FOLDER` no filtro ou editando `NousData\nous_files.json`.
+- **Status no chat** — aparece *"Nous consultou seus arquivos: arquivo.md"* quando trechos são usados.
+
+Tudo fica na sua máquina; nada vai para a nuvem.
+
+---
+
 ## Como funciona
 
 ```
@@ -197,7 +211,9 @@ Ele lê o manifesto de instalação, então Ollama/Python só são removidos **s
 ```
 Nous WebUI/
 ├─ branding/    identidade: logo, tema Branco & Ouro, toggle claro/escuro, apply_branding.py
+├─ files/       RAG local: indexador, filtro de busca híbrida, script de auto-registro
 ├─ images/      geração de imagem: instalador do ComfyUI, modelos Flux, o Pipe do chat
+├─ memory/      filtro de memória pessoal + script de auto-registro
 ├─ monitor/     o serviço do painel de recursos (GPU + modelos carregados)
 ├─ launchers/   iniciar/parar em segundo plano + build do .exe sem console
 ├─ installer/   instalador de 1 comando + o script do Inno Setup (.exe)

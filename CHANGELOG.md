@@ -4,6 +4,30 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.6.0] - 2026-06-07
+### Adicionado
+- **Acesso aos seus arquivos locais — Fase 2** (`files/`): o Nous agora consulta
+  automaticamente sua pasta de notas (Obsidian, `.md`, `.txt`) e injeta os trechos
+  mais relevantes no contexto de cada conversa.
+  - `files/index_files.py` — indexador incremental: chunking por parágrafos/headings,
+    embeddings via Ollama (`nomic-embed-text` com prefixo `search_document:`), tabela
+    FTS5, mtime+hash para so' reindexa o que mudou. Modo watch (a cada 20 s).
+    Singleton por porta (8991) para nao duplicar processo.
+  - `files/nous_files.py` — Filter global do Open WebUI com busca **hibrida**:
+    semântica (cosine similarity via matriz de embeddings) + palavra-chave (FTS5/BM25),
+    fundidas por Reciprocal Rank Fusion. Limiar `MIN_SIM=0.65` bloqueia ruido
+    (`search_query:` no embedding da consulta). Status: *"Nous consultou seus
+    arquivos: arquivo.md"*. Stopwords PT/EN para eliminar tokens triviais do FTS.
+  - `files/register_files.py` — auto-registra o filter direto no `webui.db` (sem
+    login, idempotente). Chamado pelo launcher a cada boot.
+- **Arena Model desativado** (`ENABLE_EVALUATION_ARENA_MODELS=False`): nao aparece
+  mais no dropdown, evitando confusao.
+- **Modelo pre-selecionado** (`DEFAULT_MODELS=gemma4:12b`): novo chat ja abre com
+  o gemma4 selecionado; usuario nao precisa escolher nada.
+### Mudado
+- `instalar.bat` agora passa `-WithModel` por padrao: instala o gemma4:12b (~5 GB)
+  durante o setup, sem precisar navegar ate Admin > Settings > Models.
+
 ## [1.5.1] - 2026-06-07
 ### Corrigido
 - **Wordmark alinhado com a coruja na tela inicial**: o `body::after` fixo ficava

@@ -9,7 +9,7 @@
 Chat · Vision · Local image generation · Web search — 100% on your PC.  
 No cloud. No API keys. Nothing ever leaves your machine.
 
-[![version](https://img.shields.io/badge/version-1.5.1-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.6.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requirements)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20private-2ea44f)](#why-nous)
@@ -34,6 +34,7 @@ No cloud. No API keys. Nothing ever leaves your machine.
 - **Web search** — optional, via DuckDuckGo. No API key required.
 - **Resource panel** — live GPU VRAM / shared memory, which models are loaded, and a one-click stop button to free your card.
 - **Runs in the background** — no terminal windows; launch from a desktop shortcut.
+- **Reads your files** — point it at your Obsidian vault (or any notes folder) and Nous automatically searches your `.md`/`.txt` files for relevant passages and injects them into every conversation. Hybrid semantic + keyword search, 100 % local.
 
 > This repo ships the **identity + tooling** (theme, launchers, installers, the image pipeline, the monitor). The engine (Ollama, Python/Open WebUI, the model) is installed for you by the scripts below.
 
@@ -158,6 +159,19 @@ It installs itself automatically on launch (no import, no admin panel) and store
 
 ---
 
+## Files — Nous reads your notes
+
+Point Nous at a folder (your Obsidian vault, a `Documents\Nous` folder, anything with `.md`/`.txt` files) and it will search your notes automatically before every reply, injecting the most relevant passages into the conversation context.
+
+- **Hybrid search** — combines semantic embeddings (`nomic-embed-text` via Ollama) with full-text FTS5 keyword search, fused by Reciprocal Rank Fusion for the best of both.
+- **Fully incremental** — the background indexer (`files/index_files.py`) only re-indexes files that actually changed.
+- **Self-configuring** — on first launch Nous creates `Documents\Nous`; you can point it elsewhere via the `FOLDER` valve in the filter settings or by editing `NousData\nous_files.json`.
+- **Status in chat** — a *"Nous consultou seus arquivos: filename.md"* status appears whenever passages are used.
+
+Everything stays on your machine; nothing is sent to any cloud.
+
+---
+
 ## How it works
 
 ```
@@ -197,7 +211,9 @@ It reads the install manifest, so Ollama/Python are only removed **if Nous insta
 ```
 Nous WebUI/
 ├─ branding/    identity: logo, White & Gold theme, light/dark toggle, apply_branding.py
+├─ files/       local file RAG: indexer, hybrid-search filter, auto-register script
 ├─ images/      local image gen: ComfyUI installer, Flux models, the chat Pipe
+├─ memory/      personal memory filter + auto-register script
 ├─ monitor/     the resource panel service (GPU + loaded models)
 ├─ launchers/   start/stop in the background + build the no-console .exe
 ├─ installer/   one-command installer + the Inno Setup (.exe) script
