@@ -157,21 +157,31 @@ Step 5 "Aplicando a identidade Nous"
 Step 6 "Dados, atalho e launcher"
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 Ok "pasta de dados: $dataDir"
-try { & (Join-Path $REPO "launchers\build-exe.ps1") | Out-Null; Ok "launchers .exe gerados" }
-catch { Info "build do .exe pulado (instale o modulo ps2exe para gerar)" }
-
+# (opcional) gera os .exe bonitos via ps2exe; se faltar o modulo, seguimos
+# com o atalho via .vbs (funciona igual, sem janela de console).
 $nousExe = Join-Path $REPO "launchers\Nous.exe"
+try { & (Join-Path $REPO "launchers\build-exe.ps1") | Out-Null; Ok "launchers .exe gerados" }
+catch { Info "sem ps2exe: vou usar o atalho via .vbs (abre igual, sem janela)" }
+
+# Cria SEMPRE um atalho funcional na area de trabalho:
+#  - se Nous.exe existe, aponta p/ ele;
+#  - senao, aponta p/ wscript + nous-hidden.vbs (inicia o .ps1 escondido).
+$desktop = [Environment]::GetFolderPath("Desktop")
+$ico = Join-Path $REPO "branding\assets\nous.ico"
+$ws  = New-Object -ComObject WScript.Shell
+$lnk = $ws.CreateShortcut((Join-Path $desktop "Nous.lnk"))
 if (Test-Path $nousExe) {
-    $desktop = [Environment]::GetFolderPath("Desktop")
-    $ws  = New-Object -ComObject WScript.Shell
-    $lnk = $ws.CreateShortcut((Join-Path $desktop "Nous.lnk"))
     $lnk.TargetPath = $nousExe
     $lnk.WorkingDirectory = (Split-Path $nousExe)
-    $ico = Join-Path $REPO "branding\assets\nous.ico"
-    if (Test-Path $ico) { $lnk.IconLocation = "$ico,0" }
-    $lnk.Save()
-    Ok "atalho 'Nous' criado na area de trabalho"
+} else {
+    $vbs = Join-Path $REPO "launchers\nous-hidden.vbs"
+    $lnk.TargetPath = "wscript.exe"
+    $lnk.Arguments  = "`"$vbs`""
+    $lnk.WorkingDirectory = (Join-Path $REPO "launchers")
 }
+if (Test-Path $ico) { $lnk.IconLocation = "$ico,0" }
+$lnk.Save()
+Ok "atalho 'Nous' criado na area de trabalho"
 
 # 6.5) Manifesto de instalacao ---------------------------------------------
 # Registra o que o Nous REALMENTE instalou, para o desinstalador remover so'

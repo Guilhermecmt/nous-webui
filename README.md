@@ -90,6 +90,8 @@ It prints **CAPABLE (GPU)**, **CAPABLE (CPU)** or **NOT CAPABLE** with the reaso
 
 That's all. It checks your machine, installs Ollama + Python + Open WebUI, applies the Nous identity and creates a desktop shortcut — no need to touch PowerShell or change any setting. If Windows shows a prompt, choose **Yes / Run anyway**.
 
+Open Nous from the **Nous** shortcut on your desktop — or, if it isn't there, double-click **`iniciar.bat`** in the folder.
+
 > The PowerShell commands below are for advanced users and must be run **from inside the Nous folder** (the relative paths like `tools\check-system.ps1` only resolve there).
 
 ### Option A — Installer (`.exe`) · for end users

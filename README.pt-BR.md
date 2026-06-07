@@ -90,6 +90,8 @@ Retorna **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** com o motivo.
 
 Pronto. Ele analisa a máquina, instala Ollama + Python + Open WebUI, aplica a identidade Nous e cria um atalho na área de trabalho — sem precisar abrir o PowerShell nem mudar nenhuma configuração. Se o Windows mostrar um aviso, escolha **Sim / Executar assim mesmo**.
 
+Abra o Nous pelo atalho **Nous** na área de trabalho — ou, se ele não estiver lá, dê clique duplo em **`iniciar.bat`** na pasta.
+
 > Os comandos de PowerShell abaixo são para usuários avançados e precisam ser rodados **de dentro da pasta do Nous** (caminhos relativos como `tools\check-system.ps1` só funcionam ali).
 
 ### Opção A — Instalador (`.exe`) · para usuários finais
