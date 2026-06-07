@@ -57,8 +57,17 @@ function Register-Memory {
     }
 }
 
-# Ja esta rodando? Garante a memoria e abre o navegador.
-if (Test-Up) { Register-Memory; Start-Process $url; return }
+# Garante o Pipe de imagem registrado no banco (sem credenciais).
+# So' faz algo se nous_image_pipe.py existir (ComfyUI instalado).
+function Register-Pipe {
+    $reg = Join-Path $PSScriptRoot "..\images\register_pipe_auto.py"
+    if ((Test-Path $py) -and (Test-Path $reg)) {
+        & $py "$reg" --data-dir "$env:DATA_DIR" | Out-Null
+    }
+}
+
+# Ja esta rodando? Garante funcoes nativas e abre o navegador.
+if (Test-Up) { Register-Memory; Register-Pipe; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -78,8 +87,8 @@ if ((Test-Path $py) -and (Test-Path $monitor)) {
     catch { Start-Process -FilePath $py -ArgumentList "`"$monitor`"" -WindowStyle Hidden }
 }
 
-# Espera ficar pronto, garante a memoria nativa e abre o navegador
+# Espera ficar pronto, garante funcoes nativas e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Register-Memory; Start-Process $url; break }
+    if (Test-Up) { Register-Memory; Register-Pipe; Start-Process $url; break }
 }

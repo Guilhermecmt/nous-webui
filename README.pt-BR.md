@@ -9,7 +9,7 @@
 Chat · Visão · Geração de imagem local · Busca na web — 100% no seu PC.  
 Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 
-[![version](https://img.shields.io/badge/version-1.4.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.5.1-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requisitos)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20privado-2ea44f)](#por-que-o-nous)
@@ -120,12 +120,9 @@ Abra o Nous, crie sua conta (a **primeira conta é a admin**), vá em
 ```powershell
 # Instala o ComfyUI + o PyTorch certo p/ a sua GPU + modelos do Flux.1 Schnell (~12 GB)
 powershell -ExecutionPolicy Bypass -File images\install-comfyui.ps1
-
-# Depois de criar sua conta no Nous, ative o roteamento de imagem no chat:
-& $env:USERPROFILE\open-webui\Scripts\python.exe images\register_pipe.py --email voce@exemplo.com --password SUASENHA
 ```
 
-Inicie o motor (`images\start-comfyui.ps1`) e peça no chat: *"crie uma logo dourada de uma coruja"* — a imagem aparece **na conversa**. O resto continua indo para o modelo de linguagem. O Flux Schnell é Apache-2.0 (uso comercial liberado).
+Reinicie o Nous (`launchers\start-nous.ps1`) — o Pipe de imagem se registra sozinho, sem credenciais. Inicie o motor (`images\start-comfyui.ps1`), selecione **Gerador de Imagem Local** no dropdown de modelos e peça: *"crie uma logo dourada de uma coruja"* — a imagem aparece **na conversa**. O Flux Schnell é Apache-2.0 (uso comercial liberado).
 
 ---
 

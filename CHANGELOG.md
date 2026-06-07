@@ -4,6 +4,17 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.5.1] - 2026-06-07
+### Corrigido
+- **Wordmark alinhado com a coruja na tela inicial**: o `body::after` fixo ficava
+  longe da logo (topo vs centro). Agora o CSS o suprime quando a coruja esta'
+  visivel e o `loader.js` injeta `.nous-home-wordmark` diretamente abaixo dela.
+### Adicionado
+- **Auto-registro do Pipe de imagem** (`images/register_pipe_auto.py`): o launcher
+  registra o Gerador de Imagem Local **direto no banco** a cada boot, sem email
+  nem senha. Instale o ComfyUI, reinicie o Nous e o Pipe ja' aparece no dropdown
+  de modelos, sem nenhum comando extra.
+
 ## [1.5.0] - 2026-06-07
 ### Adicionado
 - **Memoria pessoal persistente e 100% local** (`memory/nous_memory.py`): o Nous

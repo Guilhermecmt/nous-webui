@@ -9,7 +9,7 @@
 Chat · Vision · Local image generation · Web search — 100% on your PC.  
 No cloud. No API keys. Nothing ever leaves your machine.
 
-[![version](https://img.shields.io/badge/version-1.4.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.5.1-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requirements)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20private-2ea44f)](#why-nous)
@@ -120,12 +120,9 @@ Open Nous, create your account (the **first account is the admin**), go to
 ```powershell
 # Installs ComfyUI + the right PyTorch for your GPU + Flux.1 Schnell models (~12 GB)
 powershell -ExecutionPolicy Bypass -File images\install-comfyui.ps1
-
-# After creating your Nous account, enable in-chat image routing:
-& $env:USERPROFILE\open-webui\Scripts\python.exe images\register_pipe.py --email you@example.com --password YOURPASS
 ```
 
-Start the engine (`images\start-comfyui.ps1`) and ask in the chat: *"create a golden owl logo"* — the image appears **inline in the conversation**. Everything else still goes to the language model. Flux Schnell is Apache-2.0 (commercial use OK).
+Restart Nous (`launchers\start-nous.ps1`) — the image pipe registers itself automatically, no credentials needed. Start the ComfyUI engine (`images\start-comfyui.ps1`), select **Gerador de Imagem Local** in the model dropdown, and ask: *"create a golden owl logo"* — the image appears **inline in the conversation**. Flux Schnell is Apache-2.0 (commercial use OK).
 
 ---
 
