@@ -181,6 +181,18 @@ tools\health-check.ps1                # verificação pós-instalação
 python tools\reset-password.py --email voce@exemplo.com   # esqueci a senha
 ```
 
+## Desinstalar
+
+Dê clique duplo em **`desinstalar.bat`**. Por padrão ele remove só o app Nous isolado (o ambiente Python, o atalho da área de trabalho e os launchers) e **preserva** seus dados (`NousData`), suas notas em `Documentos\Nous` e as ferramentas compartilhadas (Ollama, Python) que outros programas podem usar.
+
+Para remover tudo — incluindo dados, Ollama e Python:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\uninstall-nous.ps1 -All
+```
+
+Ele lê o manifesto de instalação e só remove Ollama/Python **se foi o Nous que os instalou** — um Ollama/Python que já existia nunca é tocado (force com `-Force`).
+
 ## Estrutura
 
 ```

@@ -90,6 +90,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 # 1) Ollama -----------------------------------------------------------------
 Step 1 "Ollama"
+$instOllama = $false   # o Nous instalou? (para o desinstalador saber)
 $ollamaExe = Find-Ollama
 if (($ollamaExe -or (Test-OllamaUp)) -and -not $Force) {
     Ok "ja instalado - nao vou baixar de novo$(if ($ollamaExe) { " ($ollamaExe)" })"
@@ -97,6 +98,7 @@ if (($ollamaExe -or (Test-OllamaUp)) -and -not $Force) {
     Info "instalando via winget (silencioso)..."
     winget install --id Ollama.Ollama -e --accept-package-agreements --accept-source-agreements --silent | Out-Null
     $ollamaExe = Find-Ollama
+    $instOllama = $true
     Ok "instalado"
 }
 if (-not (Test-OllamaUp)) {
@@ -109,10 +111,11 @@ if (Test-OllamaUp) { Ok "servico no ar" } else { Info "servico nao respondeu ain
 # 2) Modelo (baixado DENTRO do app, com progresso na tela) ------------------
 Step 2 "Modelo"
 $ollamaCmd = if ($ollamaExe) { $ollamaExe } else { "ollama" }
+$instModel = $false
 $hasModel = [bool]((& $ollamaCmd list 2>$null) -match [regex]::Escape($Model))
 if ($WithModel) {
     if ($hasModel -and -not $Force) { Ok "$Model ja baixado" }
-    else { Info "baixando $Model (pode levar varios minutos)..."; & $ollamaCmd pull $Model; Ok "baixado" }
+    else { Info "baixando $Model (pode levar varios minutos)..."; & $ollamaCmd pull $Model; $instModel = $true; Ok "baixado" }
 }
 elseif ($hasModel) { Ok "$Model ja presente" }
 else {
@@ -122,12 +125,14 @@ else {
 
 # 3) Python 3.11 ------------------------------------------------------------
 Step 3 "Python 3.11"
+$instPython = $false
 $py311 = Find-Py311
 if ($py311 -and -not $Force) { Ok "ja instalado - nao vou baixar de novo ($py311)" }
 else {
     Info "instalando via winget..."
     winget install --id Python.Python.3.11 -e --accept-package-agreements --accept-source-agreements --silent | Out-Null
     $py311 = Find-Py311
+    $instPython = $true
     if ($py311) { Ok "instalado" }
     else { Write-Host "    [erro] Python 3.11 nao encontrado apos a instalacao." -ForegroundColor Red; exit 1 }
 }
@@ -167,6 +172,20 @@ if (Test-Path $nousExe) {
     $lnk.Save()
     Ok "atalho 'Nous' criado na area de trabalho"
 }
+
+# 6.5) Manifesto de instalacao ---------------------------------------------
+# Registra o que o Nous REALMENTE instalou, para o desinstalador remover so'
+# isso e nunca mexer num Ollama/Python que ja' existia antes.
+$manifest = [ordered]@{
+    installed_at   = (Get-Date).ToString("s")
+    venv           = $venv
+    ollama_by_nous = [bool]$instOllama
+    python_by_nous = [bool]$instPython
+    model          = $Model
+    model_by_nous  = [bool]$instModel
+}
+[IO.File]::WriteAllText((Join-Path $dataDir "install-manifest.json"), ($manifest | ConvertTo-Json))
+Ok "manifesto de instalacao salvo (ajuda o desinstalador)"
 
 # 7) Verificacao ------------------------------------------------------------
 Step 7 "Verificacao final de saude"

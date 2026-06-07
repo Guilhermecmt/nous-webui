@@ -181,6 +181,18 @@ tools\health-check.ps1                # post-install sanity check
 python tools\reset-password.py --email you@example.com   # forgot the password
 ```
 
+## Uninstall
+
+Double-click **`desinstalar.bat`**. By default it removes only the isolated Nous app (its Python environment, the desktop shortcut and the launchers) and **keeps** your data (`NousData`), your notes in `Documents\Nous`, and shared tools (Ollama, Python) that other apps may rely on.
+
+To remove everything — data, Ollama and Python included:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\uninstall-nous.ps1 -All
+```
+
+It reads the install manifest and only removes Ollama/Python **if Nous installed them in the first place** — a pre-existing Ollama/Python is never touched (override with `-Force`).
+
 ## Project layout
 
 ```
