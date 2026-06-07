@@ -6,7 +6,7 @@
 ; ============================================================
 
 #define MyAppName "Nous"
-#define MyAppVersion "1.3.0"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "Nous"
 #define MyAppURL "https://github.com/Guilhermecmt/nous-webui"
 
@@ -34,11 +34,18 @@ Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 Name: "desktopicon"; Description: "Criar um atalho na Area de Trabalho"; GroupDescription: "Atalhos:"
 
 [Files]
-Source: "..\branding\*"; DestDir: "{app}\branding"; Flags: recursesubdirs ignoreversion
-Source: "..\launchers\*"; DestDir: "{app}\launchers"; Flags: recursesubdirs ignoreversion
-Source: "..\tools\*"; DestDir: "{app}\tools"; Flags: recursesubdirs ignoreversion
+Source: "..\branding\*"; DestDir: "{app}\branding"; Excludes: "marble*.png,__pycache__\*,*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\launchers\*"; DestDir: "{app}\launchers"; Excludes: "*.exe,.webui_secret_key"; Flags: recursesubdirs ignoreversion
+Source: "..\tools\*"; DestDir: "{app}\tools"; Excludes: "__pycache__\*,*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\images\*"; DestDir: "{app}\images"; Excludes: "__pycache__\*,*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\monitor\*"; DestDir: "{app}\monitor"; Excludes: "__pycache__\*,*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\search\*"; DestDir: "{app}\search"; Excludes: "*.sqlite,__pycache__\*,*.pyc"; Flags: recursesubdirs ignoreversion
+Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: recursesubdirs ignoreversion
 Source: "..\installer\install-nous.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\README.pt-BR.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\VERSION"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

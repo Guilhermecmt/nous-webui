@@ -53,13 +53,13 @@ button.bg-gray-850:hover { background-color: var(--nous-gold-deep) !important; }
 body::after {
     content: "NOUS";
     position: fixed;
-    top: 10px;
+    top: 12px;
     left: 50%;
     transform: translateX(-50%);
     padding-left: 0.42em;            /* compensa o letter-spacing p/ centralizar */
     font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 18px;
     letter-spacing: 0.42em;
     color: var(--nous-gold);
     opacity: 0.92;
@@ -67,4 +67,65 @@ body::after {
     pointer-events: none;
     user-select: none;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ===== Tela inicial: remove o nome do modelo e centraliza a logo =====
+   Estrutura real (chat/Placeholder.svelte): uma linha
+     .flex.flex-row.justify-center ... .max-w-xl
+   com 2 filhos -> [container da logo]  +  [nome do modelo].
+   Escondemos o 2o filho (o nome, .line-clamp-1.flex.items-center); a logo
+   fica sozinha e, como a linha e' justify-center, centralizada. */
+.flex.flex-row.justify-center.max-w-xl > .line-clamp-1.flex.items-center {
+    display: none !important;
+}
+/* Logo um pouco maior, ja' que agora e' o protagonista da tela */
+.flex.flex-row.justify-center.max-w-xl img.rounded-full {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+}
+
+/* ===== Botao flutuante de tema claro/escuro (criado por loader.js) =====
+   Aparece apenas na tela inicial; o comportamento esta' em branding/nous-loader.js. */
+#nous-theme-toggle {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 9998;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid var(--nous-gold);
+    background: rgba(200, 150, 46, 0.10);
+    color: var(--nous-gold);
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+#nous-theme-toggle:hover {
+    background: var(--nous-gold);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(200, 150, 46, 0.35);
+}
+#nous-theme-toggle:active { transform: translateY(0); }
+#nous-theme-toggle svg { width: 20px; height: 20px; display: block; }
+
+/* ===== Tela de login: logo e nome maiores (sem zoom ficava pequeno) ===== */
+/* O wordmark "NOUS" fica bem maior so' na pagina de login (#auth-page),
+   sem inflar o tamanho discreto que ele tem dentro do chat. */
+body:has(#auth-page)::after {
+    font-size: 32px;
+    top: 26px;
+    letter-spacing: 0.5em;
+    padding-left: 0.5em;
+    opacity: 1;
+}
+/* Logo da coruja no canto da tela de login (era w-6 = 1.5rem) */
+#logo.w-6 {
+    width: 3.25rem !important;
+    height: auto !important;
 }

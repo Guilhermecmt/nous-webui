@@ -10,7 +10,11 @@ bkp/*
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
 NousData/
+
+# --- Cache de busca (gerado pelo search/) ---
+search/search_cache.sqlite
 
 # --- Artefatos de build ---
 *.exe
@@ -47,6 +51,9 @@ pyvenv.cfg
 *.local
 .env
 config.local.*
+# Chave secreta do Open WebUI (sessoes) - NUNCA versionar
+.webui_secret_key
+**/.webui_secret_key
 
 # --- Sistema operacional ---
 Thumbs.db

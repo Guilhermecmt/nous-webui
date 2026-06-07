@@ -1,0 +1,21 @@
+# Configuracao minima do SearXNG para uso local pelo Nous.
+# O essencial: habilitar o formato JSON e desligar o limiter (acesso programatico).
+use_default_settings: true
+
+server:
+  # TROQUE por um valor aleatorio proprio. Ex. (PowerShell):
+  #   -join ((48..57)+(97..102) | Get-Random -Count 64 | ForEach-Object {[char]$_})
+  secret_key: "nous-local-troque-este-valor-por-um-aleatorio"
+  limiter: false
+  image_proxy: true
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  # habilita a API JSON consumida por search_web()
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true

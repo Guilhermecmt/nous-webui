@@ -20,7 +20,10 @@
 param(
     [switch]$Force,
     [switch]$WithModel,                # baixar o modelo durante a instalacao (por padrao NAO)
-    [string]$Model = "gemma4:12b"
+    [switch]$WithImages,               # instalar tambem o motor de imagem (ComfyUI + Flux)
+    [string]$Model = "gemma4:12b",
+    [string]$AdminEmail,               # se a conta ja existir, registra o Pipe de imagem
+    [string]$AdminPassword
 )
 $ErrorActionPreference = "Stop"
 
@@ -121,4 +124,26 @@ if (Test-Path $nousExe) {
 Step 7 "Verificacao final de saude"
 & (Join-Path $REPO "tools\health-check.ps1") -Model $Model
 
+# 8) Motor de imagem (opcional) --------------------------------------------
+# Nao-fatal: se a parte pesada/GPU-especifica falhar, o nucleo continua OK.
+if ($WithImages) {
+    Step 8 "Motor de imagem (ComfyUI + Flux) - opcional"
+    try {
+        & (Join-Path $REPO "images\install-comfyui.ps1")
+        if ($AdminEmail -and $AdminPassword) {
+            Info "registrando o Pipe 'Gerador de Imagem Local'..."
+            & $vpy (Join-Path $REPO "images\register_pipe.py") --email $AdminEmail --password $AdminPassword
+        } else {
+            Info "Apos criar sua conta no Nous, ative a geracao de imagem no chat com:"
+            Info "  `"$vpy`" images\register_pipe.py --email SEU@EMAIL --password SUASENHA"
+        }
+    } catch {
+        Info "[aviso] motor de imagem falhou (segue sem ele): $($_.Exception.Message)"
+    }
+}
+
 Write-Host "`n=========== Nous pronto! Abra pelo atalho 'Nous'. ===========" -ForegroundColor Green
+Write-Host "Chat, visao (envie prints), busca na web e o painel de Recursos ja vem ativos." -ForegroundColor White
+if (-not $WithImages) {
+    Write-Host "Para gerar imagens localmente depois: install-nous.ps1 -WithImages" -ForegroundColor DarkGray
+}

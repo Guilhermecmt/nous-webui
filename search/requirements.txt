@@ -1,0 +1,5 @@
+requests>=2.31
+# opcional: melhora o modo --deep (extracao de texto das paginas)
+beautifulsoup4>=4.12
+# proximo passo (agente): descomente quando for evoluir para o LangGraph
+# langgraph>=0.2

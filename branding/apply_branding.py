@@ -6,6 +6,7 @@ Aplica em uma instalacao existente do Open WebUI:
   - a logo (coruja Nous) em todos os favicons/logos/splash
   - favicon.svg (PNG embutido) e favicon.ico
   - o tema "Branco & Ouro" (static/custom.css)
+  - o comportamento extra (static/loader.js): botao de tema claro/escuro
   - o nome do app "Nous" (sem o sufixo "(Open WebUI)")
 
 Portatil: localiza o Open WebUI via `import open_webui`, entao funciona em
@@ -30,6 +31,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(REPO, "branding", "assets")
 MASTER = os.path.join(ASSETS, "nous_logo.png")
 CSS_SRC = os.path.join(REPO, "branding", "nous-gold.css")
+JS_SRC = os.path.join(REPO, "branding", "nous-loader.js")
 BACKUP = os.path.join(REPO, "bkp", "openwebui-originais")
 os.makedirs(BACKUP, exist_ok=True)
 
@@ -37,11 +39,20 @@ STATIC_DIRS = {
     "static": os.path.join(OW, "static"),
     "frontend_static": os.path.join(OW, "frontend", "static"),
 }
-IMG_TARGETS = [
-    "apple-touch-icon.png", "favicon-96x96.png", "favicon-dark.png",
-    "favicon.png", "logo.png", "splash-dark.png", "splash.png",
-    "web-app-manifest-192x192.png", "web-app-manifest-512x512.png",
-]
+# nome -> tamanho padrao (px) usado SE o arquivo ainda nao existir.
+# Importante: o frontend referencia /static/favicon.png e /static/splash.png;
+# se faltarem, a logo/splash quebram (404). Por isso criamos os que faltam.
+IMG_TARGETS = {
+    "apple-touch-icon.png": 180,
+    "favicon-96x96.png": 96,
+    "favicon-dark.png": 512,
+    "favicon.png": 512,
+    "logo.png": 512,
+    "splash.png": 512,
+    "splash-dark.png": 512,
+    "web-app-manifest-192x192.png": 192,
+    "web-app-manifest-512x512.png": 512,
+}
 
 
 def backup(path, label):
@@ -51,6 +62,18 @@ def backup(path, label):
             shutil.copy2(path, b)
 
 
+def _fit(master, w, h):
+    """Redimensiona a logo p/ (w,h). Se nao for quadrada, centraliza com fundo
+    transparente (preserva o formato esperado pelo frontend)."""
+    if w == h:
+        return master.resize((w, h), Image.LANCZOS)
+    side = min(w, h)
+    m = master.resize((side, side), Image.LANCZOS)
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    out.paste(m, ((w - side) // 2, (h - side) // 2), m)
+    return out
+
+
 def apply_images(master):
     # frontend/favicon.png (raiz)
     extra = os.path.join(OW, "frontend", "favicon.png")
@@ -58,25 +81,19 @@ def apply_images(master):
         backup(extra, "frontend")
         with Image.open(extra) as im:
             w, h = im.size
-        master.resize((w, h), Image.LANCZOS).save(extra)
+        _fit(master, w, h).save(extra)
     for label, d in STATIC_DIRS.items():
         if not os.path.isdir(d):
             continue
-        for name in IMG_TARGETS:
+        for name, default in IMG_TARGETS.items():
             p = os.path.join(d, name)
-            if not os.path.exists(p):
-                continue
-            backup(p, label)
-            with Image.open(p) as im:
-                w, h = im.size
-            if w == h:
-                out = master.resize((w, h), Image.LANCZOS)
+            if os.path.exists(p):
+                backup(p, label)
+                with Image.open(p) as im:
+                    w, h = im.size
             else:
-                side = min(w, h)
-                m = master.resize((side, side), Image.LANCZOS)
-                out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-                out.paste(m, ((w - side) // 2, (h - side) // 2), m)
-            out.save(p)
+                w = h = default  # cria do zero (instalacao que nao trazia o arquivo)
+            _fit(master, w, h).save(p)
 
 
 def apply_favicons_and_css(master):
@@ -90,19 +107,17 @@ def apply_favicons_and_css(master):
     )
     ico_sizes = [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
     css = open(CSS_SRC, encoding="utf-8").read()
+    js = open(JS_SRC, encoding="utf-8").read() if os.path.exists(JS_SRC) else ""
     for label, d in STATIC_DIRS.items():
         if not os.path.isdir(d):
             continue
-        for f in ("custom.css", "favicon.svg", "favicon.ico"):
+        for f in ("custom.css", "loader.js", "favicon.svg", "favicon.ico"):
             backup(os.path.join(d, f), label)
         open(os.path.join(d, "custom.css"), "w", encoding="utf-8").write(css)
+        if js:
+            open(os.path.join(d, "loader.js"), "w", encoding="utf-8").write(js)
         open(os.path.join(d, "favicon.svg"), "w", encoding="utf-8").write(svg)
         master.save(os.path.join(d, "favicon.ico"), sizes=ico_sizes)
-        # fundo de marmore (usado pelo custom.css)
-        for mb in ("marble-dark.png", "marble-light.png"):
-            mbsrc = os.path.join(ASSETS, mb)
-            if os.path.exists(mbsrc):
-                shutil.copy2(mbsrc, os.path.join(d, mb))
 
 
 def patch_name(app_name="Nous"):
@@ -129,7 +144,7 @@ def main():
     master = Image.open(MASTER).convert("RGBA")
     print("Open WebUI em:", OW)
     apply_images(master);            print("  [ok] logos/favicons (png)")
-    apply_favicons_and_css(master);  print("  [ok] favicon.svg/.ico + tema custom.css")
+    apply_favicons_and_css(master);  print("  [ok] favicon.svg/.ico + tema custom.css + loader.js")
     print("  [nome]", patch_name())
     print("\nIdentidade Nous aplicada. Reinicie o servidor e use Ctrl+Shift+R no navegador.")
 

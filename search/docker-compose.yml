@@ -1,0 +1,18 @@
+# SearXNG local para o Nous - metabuscador self-hosted.
+# Porta 8888 escolhida de proposito para NAO colidir com:
+#   - Open WebUI (8080)
+#   - Ollama     (11434)
+# Subir:  docker compose up -d     -> depois acesse http://localhost:8888
+# Parar:  docker compose down
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: nous-searxng
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8888/
+      - INSTANCE_NAME=Nous Search
+    restart: unless-stopped
