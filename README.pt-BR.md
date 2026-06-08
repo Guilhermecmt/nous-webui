@@ -28,15 +28,13 @@ Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 
 - **Realmente privado** — o modelo e todas as conversas ficam no seu computador.
 - **Lembra de você** — aprende fatos duráveis sobre você ao longo das conversas e os recupera sozinho, no seu PC. O que a nuvem não pode fazer com segurança.
+- **Lê seus arquivos** — aponte para o seu vault do Obsidian (ou qualquer pasta de notas) e o Nous busca automaticamente nos seus `.md`/`.txt` e injeta os trechos relevantes em cada conversa.
 - **Bonito por padrão** — tema, logo, alternância claro/escuro, UI com identidade.
 - **Gera imagens localmente** — peça *"crie uma imagem de…"* e ela aparece inline no chat, via ComfyUI + Flux. Sem assinatura.
 - **Visão** — solte um print ou foto e pergunte; o modelo realmente vê a imagem.
 - **Busca na web** — opcional, via DuckDuckGo. Sem chave de API.
 - **Painel de recursos** — VRAM / memória compartilhada em tempo real, modelos carregados e um botão para liberar a placa na hora.
 - **Roda em segundo plano** — sem janelas de terminal; abre por um atalho.
-- **Lê seus arquivos** — aponte para o seu vault do Obsidian (ou qualquer pasta de notas) e o Nous busca automaticamente os trechos mais relevantes dos seus `.md`/`.txt` e os injeta em cada conversa. Busca híbrida semântica + palavra-chave, 100 % local.
-
-> Este repositório traz a **identidade + ferramentas** (tema, launchers, instaladores, o pipeline de imagem, o monitor). O motor (Ollama, Python/Open WebUI, o modelo) é instalado pelos scripts abaixo.
 
 ---
 
@@ -46,165 +44,149 @@ Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 
 ---
 
-## Em um relance
-
-<div align="center">
-
-<img src="docs/screenshots/dashboard-showcase.png" width="860" alt="Nous workspace">
-
-<br><br>
-
-<img src="docs/screenshots/performance.png" width="860" alt="Rode IA na sua máquina">
-
-</div>
-
----
-
 ## Requisitos
 
 | Recurso | Mínimo | Recomendado |
 |---------|--------|-------------|
 | SO      | Windows 10 / 11 | Windows 11 |
-| RAM     | 16 GB | 32 GB |
-| GPU / VRAM | nenhuma — roda na CPU | 8 GB+ (ideal 12 GB+) |
+| RAM     | 8 GB | 16 GB+ |
+| GPU / VRAM | nenhuma — roda na CPU (lento) | 8 GB+ VRAM para aceleração por GPU |
 | Disco   | 20 GB livres | 30 GB+ |
 
-> A geração de imagem é pesada na GPU. Funciona em **NVIDIA** (CUDA) e **AMD RDNA4 (RX 9070 / 9060)** via ROCm nativo; outras GPUs caem para CPU (lento).
-
-Analise sua máquina primeiro:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\check-system.ps1
-```
-
-Retorna **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** com o motivo.
+> **Sem GPU dedicada?** O Nous funciona em CPUs também — só um pouco mais lento (1–2 min por resposta). O instalador detecta isso automaticamente e escolhe um modelo mais leve para você.
 
 ---
 
-## Começo rápido
+## Começo rápido — clique duplo para instalar
 
-### Mais fácil — baixar e dar clique duplo (recomendado)
+> **Isso é tudo que você precisa fazer.** Sem terminal, sem configuração.
 
-1. Use o botão verde **Code → Download ZIP** no topo desta página (ou `git clone`).
-2. Descompacte em qualquer lugar.
+1. Clique no botão verde **Code → Download ZIP** no topo desta página.
+2. Descompacte em qualquer lugar (ex.: `Downloads\Nous WebUI`).
 3. Abra a pasta e **dê clique duplo em `instalar.bat`**.
+4. Se o Windows mostrar um aviso, escolha **"Mais informações → Executar assim mesmo"** ou **"Sim"**.
 
-Pronto. Ele analisa a máquina, instala Ollama + Python + Open WebUI, aplica a identidade Nous e cria um atalho na área de trabalho — sem precisar abrir o PowerShell nem mudar nenhuma configuração. Se o Windows mostrar um aviso, escolha **Sim / Executar assim mesmo**.
+O instalador vai:
+- Verificar seu hardware e escolher o modelo de IA ideal para sua máquina
+- Instalar o Ollama, o Python e o Open WebUI automaticamente
+- Baixar o modelo de IA (~3–5 GB — leva alguns minutos)
+- Criar um atalho **Nous** na sua Área de Trabalho
 
-Abra o Nous pelo atalho **Nous** na área de trabalho — ou, se ele não estiver lá, dê clique duplo em **`iniciar.bat`** na pasta.
+Quando terminar, **abra o Nous pelo atalho na Área de Trabalho**.
 
-> Os comandos de PowerShell abaixo são para usuários avançados e precisam ser rodados **de dentro da pasta do Nous** (caminhos relativos como `tools\check-system.ps1` só funcionam ali).
+> Se o atalho não aparecer, dê clique duplo em **`iniciar.bat`** na pasta do Nous.
 
-### Opção A — Instalador (`.exe`) · para usuários finais
+---
 
-`installer\nous-setup.iss` gera o **`Nous-Setup.exe`** (Inno Setup): um instalador online pequeno que baixa e configura tudo, cria atalhos e um desinstalador. Compile com `ISCC.exe installer\nous-setup.iss` → `dist\Nous-Setup.exe`.  
-*(Não assinado — o Windows pode pedir "Mais informações → Executar assim mesmo".)*
+## Primeiro uso — 3 passos
 
-### Opção B — Um comando · para desenvolvedores
+**Passo 1 — Crie sua conta**
 
+A primeira tela pede para você se cadastrar. Digite qualquer nome, qualquer e-mail, qualquer senha — essa conta fica só na sua máquina. **A primeira conta criada vira automaticamente a administradora.**
+
+**Passo 2 — O modelo já está selecionado**
+
+O instalador baixou um modelo compatível com seu hardware. O nome dele aparece no seletor de modelos no topo do chat. Clique nele e comece a conversar.
+
+**Passo 3 — Comece a usar**
+
+Digite qualquer coisa. O Nous está pronto.
+
+---
+
+## Qual modelo de IA devo usar?
+
+O instalador escolhe o modelo certo para sua máquina automaticamente. Se quiser trocar depois, abra o chat, clique no nome do modelo no topo, procure o modelo desejado e clique em Download.
+
+### Com GPU dedicada (NVIDIA ou AMD)
+
+| Sua VRAM | Modelo para baixar | Tamanho | Como é |
+|----------|-------------------|---------|--------|
+| 8–10 GB | `gemma4:12b` *(padrão)* | ~5 GB | Ótimo para chat, escrita e perguntas do dia a dia |
+| 12–16 GB | `qwen3:14b` | ~9 GB | Raciocínio melhor, contexto mais longo |
+| 20 GB+ | `qwen3:32b` | ~20 GB | Qualidade próxima ao GPT-4 |
+
+> Não sabe sua VRAM? Execute `instalar.bat` — ele mostra o hardware antes de instalar.
+
+### Sem GPU dedicada (só CPU)
+
+| Sua RAM | Modelo para baixar | Tamanho | Como é |
+|---------|-------------------|---------|--------|
+| 8–16 GB | `gemma4:e4b` *(selecionado automático)* | ~3 GB | Leve e rápido na CPU, bom para o dia a dia |
+| 16–32 GB | `qwen3:8b` | ~5 GB | Melhor qualidade, um pouco mais lento |
+| 32 GB+ | `gemma4:12b` | ~5 GB | Qualidade completa, mas lento (1–2 min/resposta) |
+
+---
+
+## Problemas comuns
+
+### "O Windows protegeu seu computador" / "Editor desconhecido"
+
+Isso é normal para software local sem assinatura digital. Clique em **"Mais informações"** → **"Executar assim mesmo"**.
+
+### O atalho não apareceu na Área de Trabalho
+
+Dê clique duplo em **`iniciar.bat`** na pasta do Nous. Abre do mesmo jeito.
+
+### O Nous abre mas não tem modelo para conversar
+
+Clique no nome do modelo no topo do chat → **Search** → digite `gemma4:12b` → clique no ícone de download. Aguarde terminar e selecione o modelo.
+
+### Diz "Ollama não está rodando" ou o chat não responde
+
+Abra o Nous pelo atalho da Área de Trabalho (não abra o site diretamente). O atalho já sobe o Ollama sozinho. Se já estiver aberto, clique em **Parar modelos** no painel de recursos e reabra.
+
+### A instalação falhou / quero recomeçar
+
+Dê clique duplo em **`desinstalar.bat`** → escolha **[1] Remoção segura** e depois dê clique duplo em **`instalar.bat`** de novo.
+
+### Esqueci minha senha
+
+Abra o PowerShell dentro da pasta do Nous e rode:
 ```powershell
-powershell -ExecutionPolicy Bypass -File installer\install-nous.ps1
+python tools\reset-password.py --email seuemail@exemplo.com
 ```
-
-Idempotente. Verifica a capacidade da máquina, instala **Ollama + Python + Open WebUI** só se faltarem, aplica a identidade Nous, conserta a logo, cria o atalho e roda uma verificação de saúde. Use **`-WithImages`** para instalar também o motor de imagem (ComfyUI + Flux), ou **`-Force`** para reinstalar.
-
-### Opção C — Manual
-
-```powershell
-# 1) Ollama  →  https://ollama.com  (o modelo é baixado depois, dentro do app)
-# 2) Python 3.11 + Open WebUI
-py -3.11 -m venv $env:USERPROFILE\open-webui
-& $env:USERPROFILE\open-webui\Scripts\python.exe -m pip install open-webui
-# 3) Aplicar a identidade Nous (logo, tema, alternância claro/escuro)
-& $env:USERPROFILE\open-webui\Scripts\python.exe branding\apply_branding.py
-# 4) Iniciar (segundo plano, abre o navegador)
-powershell -ExecutionPolicy Bypass -File launchers\start-nous.ps1
-```
-
-### Primeiro uso — escolher um modelo
-
-Abra o Nous, crie sua conta (a **primeira conta é a admin**), vá em  
-**Admin Panel → Settings → Models**, digite `gemma4:12b` em *"Pull a model from Ollama.com"* e baixe — o progresso aparece na tela. Selecione o modelo no topo do chat e converse.
 
 ---
 
 ## Geração de imagem local (opcional)
 
 ```powershell
-# Instala o ComfyUI + o PyTorch certo p/ a sua GPU + modelos do Flux.1 Schnell (~12 GB)
 powershell -ExecutionPolicy Bypass -File images\install-comfyui.ps1
 ```
 
-Reinicie o Nous (`launchers\start-nous.ps1`) — o Pipe de imagem se registra sozinho, sem credenciais. Inicie o motor (`images\start-comfyui.ps1`), selecione **Gerador de Imagem Local** no dropdown de modelos e peça: *"crie uma logo dourada de uma coruja"* — a imagem aparece **na conversa**. O Flux Schnell é Apache-2.0 (uso comercial liberado).
-
----
-
-## O painel de recursos
-
-Um pequeno card **Recursos** (canto inferior esquerdo) consulta um micro-serviço local (`monitor/nous_monitor.py`, porta 8990) e mostra, ao vivo:
-
-- **VRAM** e **memória compartilhada** da GPU (totais estilo Gerenciador de Tarefas),
-- quais modelos estão **carregados** e quanto cada um usa, com contagem para descarga,
-- um botão **"Parar modelos"** que libera a VRAM na hora.
-
-O launcher sobe o serviço automaticamente; os modelos saem da VRAM **30 s** após a última mensagem (configurável).
+Instala o ComfyUI + o PyTorch certo para a sua GPU + modelos do Flux.1 Schnell (~12 GB). Reinicie o Nous, selecione **Gerador de Imagem Local** no dropdown de modelos e peça: *"crie uma logo dourada de uma coruja"* — a imagem aparece **na conversa**.
 
 ---
 
 ## Memória — o Nous lembra de você
 
-O Nous mantém uma memória pessoal que vive **só na sua máquina** (`memory/nous_memory.py`, um filter global do Open WebUI). Conforme você conversa, ele aprende fatos duráveis sobre você — nome, cidade, trabalho, gostos — e os recupera nas conversas seguintes. Um status *"Nous lembrou de N detalhe(s) sobre você"* aparece quando isso acontece.
-
-Ela se instala sozinha ao abrir (sem importar nada, sem painel) e guarda tudo em `nous_memory.sqlite3` dentro da sua pasta de dados, que é gitignored. É o primeiro passo do que torna o Nous diferente: *uma IA na nuvem pode ser inteligente; só uma IA local pode ser realmente sua.*
+Conforme você conversa, o Nous aprende fatos duráveis sobre você — nome, cidade, trabalho, gostos — e os recupera nas conversas seguintes. Um status *"Nous lembrou de N detalhe(s) sobre você"* aparece quando isso acontece. Tudo fica armazenado localmente em `NousData`, nunca sincronizado.
 
 ---
 
 ## Arquivos — o Nous lê suas anotações
 
-Aponte o Nous para uma pasta (seu vault do Obsidian, uma pasta `Documentos\Nous`, qualquer coisa com `.md`/`.txt`) e ele buscará nas suas notas antes de cada resposta, injetando os trechos mais relevantes no contexto da conversa.
+Aponte o Nous para uma pasta (seu vault do Obsidian, `Documentos\Nous`, qualquer coisa com `.md`/`.txt`) e ele buscará nas suas notas antes de cada resposta, injetando os trechos relevantes na conversa.
 
-- **Busca híbrida** — combina embeddings semânticos (`nomic-embed-text` via Ollama) com busca por palavra-chave FTS5, fundidos por Reciprocal Rank Fusion.
-- **Totalmente incremental** — o indexador em segundo plano (`files/index_files.py`) só reindexa arquivos que realmente mudaram.
-- **Auto-configurável** — ao primeiro boot o Nous cria `Documentos\Nous`; você pode apontar para outra pasta pelo valve `FOLDER` no filtro ou editando `NousData\nous_files.json`.
-- **Status no chat** — aparece *"Nous consultou seus arquivos: arquivo.md"* quando trechos são usados.
-
-Tudo fica na sua máquina; nada vai para a nuvem.
+No primeiro boot, o Nous cria `Documentos\Nous` automaticamente. Coloque notas lá e o Nous vai usá-las. Para apontar para o seu vault do Obsidian, abra as configurações do filtro **Nous Files** no painel de admin e altere o valve `FOLDER`.
 
 ---
 
-## Como funciona
+## Painel de recursos
 
-```
-            ┌──────────────── Nous (Open WebUI com tema) ──────────────┐
-  Você ───▶ │  Chat · Visão · Busca na web · Painel de recursos        │
-            └───────────────┬────────────────────────┬─────────────────┘
-                texto/visão │            "crie uma imagem…"
-                            ▼                         ▼
-                  Ollama (gemma4:12b)        ComfyUI + Flux.1 Schnell
-                     100% local                  100% local
-                            └──────────► imagem salva como arquivo nativo
-                                          → mostrada inline no chat
-```
+Um pequeno card **Recursos** (canto inferior esquerdo) mostra o uso de VRAM em tempo real, quais modelos estão carregados e um botão **"Parar modelos"** que libera a GPU na hora.
 
 ---
-
-## Ferramentas
-
-```powershell
-tools\backup-data.ps1                 # zip dos seus dados (conversas/conta), mantém 10
-tools\check-system.ps1                # veredito de capacidade (RAM, VRAM real, disco)
-tools\health-check.ps1                # verificação pós-instalação
-python tools\reset-password.py --email voce@exemplo.com   # esqueci a senha
-```
 
 ## Desinstalar
 
 Dê clique duplo em **`desinstalar.bat`** e escolha uma opção:
 
-- **[1] Remoção segura** — remove só o app Nous isolado (o ambiente Python, o atalho e os launchers) e **preserva** seus dados (`NousData`), suas notas em `Documentos\Nous` e as ferramentas compartilhadas (Ollama, Python).
-- **[2] Remover tudo** — também apaga seus dados e desinstala Ollama/Python.
+- **[1] Remoção segura** *(recomendado)* — remove só o app Nous e o ambiente Python. Preserva suas conversas, notas, o Ollama e o Python.
+- **[2] Remover tudo** — também apaga suas conversas e desinstala Ollama/Python (somente os que o Nous instalou — um Ollama/Python que já existia nunca é tocado).
 
-Ele lê o manifesto de instalação, então Ollama/Python só são removidos **se foi o Nous que os instalou** — um Ollama/Python que já existia nunca é tocado. (Avançado, de dentro da pasta: `installer\uninstall-nous.ps1 -All` ou `-Force`.)
+---
 
 ## Estrutura
 
@@ -222,9 +204,53 @@ Nous WebUI/
 └─ docs/        roadmap, screenshots
 ```
 
-## Roadmap
+## Uso avançado
 
-Veja [docs/ROADMAP.md](docs/ROADMAP.md) — instalador de 1 clique de verdade, assistente de primeira execução e um **app de bandeja** que inicia/para o Nous + ComfyUI juntos.
+<details>
+<summary>Opções para desenvolvedores / usuários avançados</summary>
+
+### Verificação de hardware manual
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\check-system.ps1
+```
+
+Mostra **CAPAZ (GPU)**, **CAPAZ (CPU)** ou **INCAPAZ** com detalhes do hardware e recomendações de modelos.
+
+### Instalar pela linha de comando
+
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\install-nous.ps1 -WithModel -Model qwen3:14b
+```
+
+Idempotente. Verifica capacidade, instala Ollama + Python + Open WebUI só se faltarem, aplica a identidade, cria atalho. Use `-WithImages` para instalar também o ComfyUI, ou `-Force` para reinstalar.
+
+### Instalação manual
+
+```powershell
+# 1) Ollama  →  https://ollama.com
+# 2) Python 3.11 + Open WebUI
+py -3.11 -m venv $env:USERPROFILE\open-webui
+& $env:USERPROFILE\open-webui\Scripts\python.exe -m pip install open-webui
+# 3) Aplicar a identidade Nous
+& $env:USERPROFILE\open-webui\Scripts\python.exe branding\apply_branding.py
+# 4) Iniciar
+powershell -ExecutionPolicy Bypass -File launchers\start-nous.ps1
+```
+
+### Ferramentas
+
+```powershell
+tools\backup-data.ps1                                    # zip dos dados, mantém 10
+tools\health-check.ps1                                   # verificação pós-instalação
+python tools\reset-password.py --email voce@exemplo.com  # esqueci a senha
+```
+
+### Instalador .exe (Inno Setup)
+
+`installer\nous-setup.iss` gera `dist\Nous-Setup.exe` com `ISCC.exe installer\nous-setup.iss`. Instalador online pequeno, cria atalhos e desinstalador. Não assinado — o Windows pode pedir "Mais informações → Executar assim mesmo".
+
+</details>
 
 ---
 

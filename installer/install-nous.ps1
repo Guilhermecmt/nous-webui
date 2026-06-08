@@ -219,8 +219,27 @@ if ($WithImages) {
     }
 }
 
-Write-Host "`n=========== Nous pronto! Abra pelo atalho 'Nous'. ===========" -ForegroundColor Green
-Write-Host "Chat, visao (envie prints), busca na web e o painel de Recursos ja vem ativos." -ForegroundColor White
+Write-Host "`n==========================================================" -ForegroundColor Green
+Write-Host " Nous pronto!" -ForegroundColor Green
+Write-Host "==========================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host " 1. Abra pelo atalho 'Nous' na area de trabalho." -ForegroundColor White
+Write-Host "    (ou clique duplo em iniciar.bat se o atalho nao aparecer)" -ForegroundColor DarkGray
+Write-Host ""
+Write-Host " 2. Crie sua conta - a primeira conta e' a administradora." -ForegroundColor White
+Write-Host "    Nao precisa de email real; use qualquer nome e senha." -ForegroundColor DarkGray
+Write-Host ""
+if ($WithModel) {
+    Write-Host " 3. O modelo $Model ja foi baixado. Ele aparece no seletor" -ForegroundColor White
+    Write-Host "    de modelos no topo da tela. Clique nele e comece a conversar." -ForegroundColor DarkGray
+} else {
+    Write-Host " 3. Dentro do Nous: clique em Admin Panel > Settings > Models," -ForegroundColor White
+    Write-Host "    digite '$Model' e clique em Download." -ForegroundColor DarkGray
+}
+Write-Host ""
+Write-Host " Dica: chat, visao (envie prints), busca na web e memoria pessoal" -ForegroundColor DarkGray
+Write-Host "       ja vem ativos - sem configurar nada." -ForegroundColor DarkGray
 if (-not $WithImages) {
-    Write-Host "Para gerar imagens localmente depois: install-nous.ps1 -WithImages" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host " Para gerar imagens localmente depois: install-nous.ps1 -WithImages" -ForegroundColor DarkGray
 }

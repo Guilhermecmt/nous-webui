@@ -16,7 +16,7 @@
 #>
 
 $ErrorActionPreference = "SilentlyContinue"
-$MIN_RAM_GB  = 16
+$MIN_RAM_GB  = 8
 $MIN_DISK_GB = 20
 $GPU_VRAM_GB = 8
 
@@ -62,13 +62,37 @@ if ($problemas.Count -gt 0) {
 }
 elseif ($vramGB -ge $GPU_VRAM_GB) {
     Write-Host "VEREDITO: CAPAZ (GPU) - apta com aceleracao de GPU" -ForegroundColor Green
-    Write-Host "  Modelo recomendado: gemma4:12b" -ForegroundColor Green
-    Write-Host "  (baixe-o dentro do Nous: Admin > Settings > Models)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  Modelos recomendados (escolha 1 de acordo com sua VRAM):" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  BASICO   (8-10 GB VRAM)  ->  gemma4:12b" -ForegroundColor White
+    Write-Host "    Bom para uso geral no dia a dia. Roda bem em qualquer GPU de jogos moderna."
+    Write-Host ""
+    Write-Host "  MEDIO    (12-16 GB VRAM) ->  qwen3:14b" -ForegroundColor White
+    Write-Host "    Melhor raciocinio e contexto longo. Ideal para RX 9070 XT / RTX 4080."
+    Write-Host ""
+    Write-Host "  AVANCADO (20+ GB VRAM)   ->  qwen3:32b" -ForegroundColor White
+    Write-Host "    Qualidade proxima do GPT-4. Para GPUs high-end (RX 9070 XT 16GB, RTX 4090)."
+    Write-Host ""
+    Write-Host "  O instalador baixa o gemma4:12b por padrao." -ForegroundColor DarkGray
+    Write-Host "  Para trocar depois: abra o Nous > clique no modelo no topo > Search > digite o nome." -ForegroundColor DarkGray
     exit 0
 }
 else {
     Write-Host "VEREDITO: CAPAZ (CPU) - roda, porem sem GPU sera mais lento" -ForegroundColor Yellow
-    Write-Host "  Modelo recomendado: gemma4:e4b (mais leve para CPU)" -ForegroundColor Yellow
-    Write-Host "  (baixe-o dentro do Nous: Admin > Settings > Models)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  Modelos recomendados (sem GPU dedicada):" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  BASICO   (8-16 GB RAM, CPU moderna) ->  gemma4:e4b" -ForegroundColor White
+    Write-Host "    Leve e rapido na CPU. Qualidade boa para perguntas cotidianas."
+    Write-Host ""
+    Write-Host "  MEDIO    (16-32 GB RAM)             ->  gemma4:12b  (lento, porem completo)" -ForegroundColor White
+    Write-Host "    Funciona, mas pode levar 1-2 min por resposta."
+    Write-Host ""
+    Write-Host "  AVANCADO (CPU com 32+ GB RAM)       ->  qwen3:8b" -ForegroundColor White
+    Write-Host "    Melhor relacao qualidade/velocidade em CPU com muita RAM."
+    Write-Host ""
+    Write-Host "  O instalador baixa o gemma4:12b. Para CPU, troque por gemma4:e4b:" -ForegroundColor DarkGray
+    Write-Host "  Abra o Nous > clique no modelo no topo > Search > gemma4:e4b > baixar." -ForegroundColor DarkGray
     exit 2
 }
