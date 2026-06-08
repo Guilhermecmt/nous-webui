@@ -132,8 +132,30 @@ function Register-Files {
 
 function Setup-Files { Ensure-FilesFolder; Ensure-EmbedModel; Start-Indexer; Register-Files }
 
+# --- Historico de conversas (Fase 4): RAG sobre dialogo passado do usuario ---
+
+# Sobe o indexador de historico em segundo plano. Le o webui.db e indexa pares
+# de dialogo (pergunta + resposta) em nous_history.sqlite3. Singleton por porta
+# (8992). Ciclo de 60 s (conversas mudam com menos frequencia que arquivos).
+function Start-HistoryIndexer {
+    $idx = Join-Path $PSScriptRoot "..\history\index_history.py"
+    if ((Test-Path $py) -and (Test-Path $idx)) {
+        Start-Process -FilePath $py -ArgumentList "`"$idx`" --data-dir `"$env:DATA_DIR`"" -WindowStyle Hidden
+    }
+}
+
+# Garante o filtro Nous History registrado no banco (Filter global e ativo, sem login).
+function Register-History {
+    $reg = Join-Path $PSScriptRoot "..\history\register_history.py"
+    if ((Test-Path $py) -and (Test-Path $reg)) {
+        & $py "$reg" --data-dir "$env:DATA_DIR" | Out-Null
+    }
+}
+
+function Setup-History { Start-HistoryIndexer; Register-History }
+
 # Ja esta rodando? Garante funcoes nativas e abre o navegador.
-if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Start-Process $url; return }
+if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -156,5 +178,5 @@ if ((Test-Path $py) -and (Test-Path $monitor)) {
 # Espera ficar pronto, garante funcoes nativas e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Start-Process $url; break }
+    if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-Process $url; break }
 }

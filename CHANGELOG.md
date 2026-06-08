@@ -4,6 +4,26 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.7.0] - 2026-06-08
+### Adicionado
+- **Historico de conversas — Fase 4** (`history/`): o Nous agora recupera contexto
+  de dialogos anteriores do usuario e o injeta automaticamente em cada resposta.
+  - `history/index_history.py` — indexador incremental em modo watch (60 s): le
+    `webui.db` do Open WebUI em modo somente-leitura, agrupa mensagens em pares
+    dialogo (pergunta + resposta seguinte), gera embeddings via Ollama
+    (`nomic-embed-text`, prefixo `search_document:`), tabela FTS5 de duas colunas
+    (`user_msg`, `asst_msg`). Deduplicacao por `msg_id`. Singleton por porta (8992).
+    Marca d'agua de tempo com 1 h de sobreposicao para capturar respostas tardias.
+  - `history/nous_history.py` — Filter global do Open WebUI com busca **hibrida**
+    (semantica + FTS5/BM25, RRF). Filtra pelo `user_id` (cada usuario ve so' o
+    proprio historico). Exclui a conversa atual (evita auto-referencia circular).
+    Limiar `MIN_SIM=0.60`. Status: *"Nous encontrou contexto em N conversa(s)
+    anterior(es)."* Complementa Memoria Pessoal (fatos) e Arquivos (notas).
+  - `history/register_history.py` — auto-registra o filter em `webui.db` (sem
+    login, idempotente). Chamado pelo launcher a cada boot.
+- `launchers/start-nous.ps1`: adicionadas funcoes `Start-HistoryIndexer`,
+  `Register-History` e `Setup-History`; chamadas nos dois pontos de boot.
+
 ## [1.6.0] - 2026-06-07
 ### Adicionado
 - **Acesso aos seus arquivos locais — Fase 2** (`files/`): o Nous agora consulta

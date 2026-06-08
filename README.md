@@ -9,7 +9,7 @@
 Chat · Vision · Local image generation · Web search — 100% on your PC.  
 No cloud. No API keys. Nothing ever leaves your machine.
 
-[![version](https://img.shields.io/badge/version-1.6.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.7.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requirements)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20private-2ea44f)](#why-nous)
