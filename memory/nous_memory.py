@@ -31,6 +31,16 @@ def _data_dir() -> str:
     return os.path.join(os.path.expanduser("~"), "NousData")
 
 
+def _get_active_persona(user_id: str) -> str:
+    """Le a persona ativa do usuario em nous_active_persona.json (escrito pela API)."""
+    try:
+        path = os.path.join(_data_dir(), "nous_active_persona.json")
+        with open(path, encoding="utf-8-sig") as f:
+            return (json.load(f) or {}).get(user_id, "default")
+    except Exception:
+        return "default"
+
+
 class Filter:
     class Valves(BaseModel):
         ENABLED: bool = Field(default=True, description="Liga/desliga a memoria.")
@@ -67,36 +77,55 @@ class Filter:
                 )"""
             )
             c.execute("CREATE INDEX IF NOT EXISTS idx_user ON memories(user_id)")
+            # Fase 5: coluna persona (migracao segura — falha silenciosamente se ja' existe)
+            try:
+                c.execute("ALTER TABLE memories ADD COLUMN persona TEXT DEFAULT 'default'")
+            except Exception:
+                pass
             c.commit()
             c.close()
         except Exception:
             pass
 
-    def _get_memories(self, user_id: str):
+    def _get_memories(self, user_id: str, persona: str = "default"):
         try:
             c = self._conn()
-            rows = c.execute(
-                "SELECT text FROM memories WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
-                (user_id, int(self.valves.MAX_MEMORIES)),
-            ).fetchall()
+            try:
+                rows = c.execute(
+                    "SELECT text FROM memories WHERE user_id=? "
+                    "AND (persona=? OR persona IS NULL) "
+                    "ORDER BY created_at DESC LIMIT ?",
+                    (user_id, persona, int(self.valves.MAX_MEMORIES)),
+                ).fetchall()
+            except Exception:
+                rows = c.execute(
+                    "SELECT text FROM memories WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
+                    (user_id, int(self.valves.MAX_MEMORIES)),
+                ).fetchall()
             c.close()
             return [r[0] for r in rows]
         except Exception:
             return []
 
-    def _existing_norms(self, user_id: str):
+    def _existing_norms(self, user_id: str, persona: str = "default"):
         try:
             c = self._conn()
-            rows = c.execute("SELECT norm FROM memories WHERE user_id=?", (user_id,)).fetchall()
+            try:
+                rows = c.execute(
+                    "SELECT norm FROM memories WHERE user_id=? AND (persona=? OR persona IS NULL)",
+                    (user_id, persona),
+                ).fetchall()
+            except Exception:
+                rows = c.execute("SELECT norm FROM memories WHERE user_id=?", (user_id,)).fetchall()
             c.close()
             return {r[0] for r in rows}
         except Exception:
             return set()
 
-    def _add_memories(self, user_id: str, facts) -> int:
+    def _add_memories(self, user_id: str, facts, persona: str = "default") -> int:
         if not facts:
             return 0
-        existing = self._existing_norms(user_id)
+        existing = self._existing_norms(user_id, persona)
         added = 0
         try:
             c = self._conn()
@@ -106,10 +135,16 @@ class Filter:
                 norm = _normalize(f)
                 if not norm or norm in existing:
                     continue
-                c.execute(
-                    "INSERT INTO memories(user_id, text, norm, created_at) VALUES(?,?,?,?)",
-                    (user_id, f, norm, now),
-                )
+                try:
+                    c.execute(
+                        "INSERT INTO memories(user_id, text, norm, created_at, persona) VALUES(?,?,?,?,?)",
+                        (user_id, f, norm, now, persona),
+                    )
+                except Exception:
+                    c.execute(
+                        "INSERT INTO memories(user_id, text, norm, created_at) VALUES(?,?,?,?)",
+                        (user_id, f, norm, now),
+                    )
                 existing.add(norm)
                 added += 1
             c.commit()
@@ -123,7 +158,8 @@ class Filter:
         if not self.valves.ENABLED:
             return body
         user_id = (__user__ or {}).get("id") or "default"
-        mems = self._get_memories(user_id)
+        persona = _get_active_persona(user_id)
+        mems = self._get_memories(user_id, persona)
         if not mems:
             return body
 
@@ -158,13 +194,14 @@ class Filter:
         if not (self.valves.ENABLED and self.valves.EXTRACT):
             return body
         user_id = (__user__ or {}).get("id") or "default"
+        persona = _get_active_persona(user_id)
         user_text, assistant_text = _last_exchange(body.get("messages", []))
         if len(user_text) < int(self.valves.MIN_USER_CHARS):
             return body
         try:
-            existing = self._get_memories(user_id)
+            existing = self._get_memories(user_id, persona)
             facts = await self._extract(user_text, assistant_text, existing)
-            added = self._add_memories(user_id, facts)
+            added = self._add_memories(user_id, facts, persona)
             if added and __event_emitter__:
                 await __event_emitter__(
                     {

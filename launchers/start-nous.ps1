@@ -154,8 +154,21 @@ function Register-History {
 
 function Setup-History { Start-HistoryIndexer; Register-History }
 
+# --- Painel de memoria e personas (Fase 3 + 5): micro-servico REST local ----
+
+# Sobe a API de memoria/personas em segundo plano. Expoe http://127.0.0.1:8993.
+# Usada pelo painel flutuante do nous-loader.js (lista, edita, deleta memorias
+# e gerencia personas). Tolerante a falhas: o Nous funciona sem ela.
+function Start-MemoryAPI {
+    $api = Join-Path $PSScriptRoot "..\memory\nous_memory_api.py"
+    if ((Test-Path $py) -and (Test-Path $api)) {
+        try { Invoke-RestMethod "http://127.0.0.1:8993/health" -TimeoutSec 2 | Out-Null }
+        catch { Start-Process -FilePath $py -ArgumentList "`"$api`"" -WindowStyle Hidden }
+    }
+}
+
 # Ja esta rodando? Garante funcoes nativas e abre o navegador.
-if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-Process $url; return }
+if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -178,5 +191,5 @@ if ((Test-Path $py) -and (Test-Path $monitor)) {
 # Espera ficar pronto, garante funcoes nativas e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-Process $url; break }
+    if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; break }
 }

@@ -4,6 +4,26 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.8.0] - 2026-06-08
+### Adicionado
+- **Painel "O que o Nous sabe" — Fase 3** (`memory/nous_memory_api.py`): micro-servico
+  REST local (porta 8993, CORS aberto para localhost) que expoe as memorias para o
+  novo painel flutuante da UI. Endpoints: listar, adicionar, editar e deletar memorias;
+  criar/trocar/deletar personas; sincronizar pasta de arquivos ao trocar persona.
+- **Personas — Fase 5** (`memory/`): suporte a multiplos modos de uso com contexto
+  de memoria independente. Cada persona tem seu proprio conjunto de memorias e,
+  opcionalmente, uma pasta de arquivos diferente.
+  - Migracao automatica da tabela `memories`: adiciona coluna `persona TEXT DEFAULT
+    'default'` (compativel com dados existentes).
+  - `nous_memory.py` atualizado: le a persona ativa de `nous_active_persona.json`
+    (escrito pela API) no `inlet` e `outlet`; filtra memorias por persona; salva
+    novas memorias com a tag da persona ativa.
+  - `branding/nous-loader.js` atualizado: botao flutuante (icone cerebro, canto
+    inferior direito) abre painel "O que o Nous sabe" com seletor de persona,
+    lista de memorias editaveis/deletaveis, formulario para criar novas personas
+    (com pasta de arquivos opcional) e campo para adicionar memorias manualmente.
+- `launchers/start-nous.ps1`: adiciona `Start-MemoryAPI` nos dois pontos de boot.
+
 ## [1.7.0] - 2026-06-08
 ### Adicionado
 - **Historico de conversas — Fase 4** (`history/`): o Nous agora recupera contexto

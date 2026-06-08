@@ -266,10 +266,12 @@
 		paintToggle();
 		buildMonitor();
 		ensureTopWordmark();
+		ensureMemBtn();
 	}
 
 	function start() {
 		injectMonitorStyle();
+		injectMemStyle();
 		tick();
 		setInterval(tick, 500);
 		refreshMonitor();
@@ -280,5 +282,378 @@
 		document.addEventListener('DOMContentLoaded', start);
 	} else {
 		start();
+	}
+
+	/* ====================== Painel "O que o Nous sabe" ====================== */
+	var MEM_URL    = 'http://127.0.0.1:8993';
+	var memBtnEl   = null;
+	var memPanelEl = null;
+	var memOpen    = false;
+	var _nousUid   = null;   /* user_id do Open WebUI (carregado uma vez) */
+	var _activePer = 'default';
+	var _personas  = {};
+	var _editingId = null;
+
+	/* Obtem user_id via API do Open WebUI (token em localStorage) */
+	function loadUserId(cb) {
+		if (_nousUid) { cb(_nousUid); return; }
+		var token = '';
+		try { token = localStorage.getItem('token') || ''; } catch (e) {}
+		if (!token) { cb(null); return; }
+		fetch('/api/v1/auths/', { headers: { 'Authorization': 'Bearer ' + token } })
+			.then(function(r) { return r.json(); })
+			.then(function(d) { _nousUid = d.id || null; cb(_nousUid); })
+			.catch(function() { cb(null); });
+	}
+
+	/* ---- Estilos ---- */
+	function injectMemStyle() {
+		if (document.getElementById('nous-mem-style')) return;
+		var css =
+			/* botao flutuante */
+			'#nous-mem-btn{position:fixed;right:14px;bottom:90px;z-index:9999;' +
+			'width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(200,150,46,.5);' +
+			'background:rgba(18,18,22,.82);backdrop-filter:blur(10px);color:#c8962e;' +
+			'cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+			'box-shadow:0 4px 16px rgba(0,0,0,.3);transition:background .15s}' +
+			'#nous-mem-btn:hover{background:rgba(200,150,46,.18)}' +
+			'#nous-mem-btn svg{width:20px;height:20px}' +
+			/* painel */
+			'#nous-mem-panel{position:fixed;right:14px;bottom:140px;z-index:9998;width:300px;' +
+			'max-height:520px;display:flex;flex-direction:column;' +
+			'font-family:Inter,system-ui,sans-serif;font-size:13px;color:#eee;' +
+			'background:rgba(18,18,22,.92);backdrop-filter:blur(12px);' +
+			'border:1px solid rgba(200,150,46,.35);border-radius:14px;' +
+			'box-shadow:0 12px 32px rgba(0,0,0,.45);overflow:hidden}' +
+			'#nous-mem-panel.nous-hidden{display:none}' +
+			/* cabecalho */
+			'#nous-mem-head{display:flex;align-items:center;gap:8px;padding:10px 12px 8px;' +
+			'border-bottom:1px solid rgba(255,255,255,.07)}' +
+			'#nous-mem-head span{flex:1;font-weight:700;letter-spacing:.04em;color:#e7c069}' +
+			'#nous-mem-close{background:none;border:none;color:#888;cursor:pointer;' +
+			'font-size:18px;line-height:1;padding:0 2px}' +
+			'#nous-mem-close:hover{color:#eee}' +
+			/* seletor de persona */
+			'#nous-per-row{display:flex;align-items:center;gap:7px;padding:8px 12px;' +
+			'border-bottom:1px solid rgba(255,255,255,.07)}' +
+			'#nous-per-row label{font-size:11px;opacity:.6;white-space:nowrap}' +
+			'#nous-per-sel{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);' +
+			'border-radius:7px;color:#eee;padding:4px 7px;font-size:12px;cursor:pointer}' +
+			'#nous-per-new{background:rgba(200,150,46,.15);border:1px solid rgba(200,150,46,.4);' +
+			'color:#e7c069;border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer;white-space:nowrap}' +
+			'#nous-per-new:hover{background:rgba(200,150,46,.28)}' +
+			/* formulario nova persona */
+			'#nous-per-form{padding:0 12px 8px;display:none;flex-direction:column;gap:5px;' +
+			'border-bottom:1px solid rgba(255,255,255,.07)}' +
+			'#nous-per-form.active{display:flex}' +
+			'.nous-per-inp{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);' +
+			'border-radius:7px;color:#eee;padding:5px 8px;font-size:12px;width:100%;box-sizing:border-box}' +
+			'.nous-per-row2{display:flex;gap:6px}' +
+			'.nous-per-save{flex:1;background:rgba(200,150,46,.18);border:1px solid rgba(200,150,46,.4);' +
+			'color:#e7c069;border-radius:7px;padding:5px;font-size:12px;cursor:pointer}' +
+			'.nous-per-save:hover{background:rgba(200,150,46,.32)}' +
+			'.nous-per-cancel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);' +
+			'color:#aaa;border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer}' +
+			/* lista de memorias */
+			'#nous-mem-list{flex:1;overflow-y:auto;padding:6px 8px}' +
+			'#nous-mem-list::-webkit-scrollbar{width:5px}' +
+			'#nous-mem-list::-webkit-scrollbar-track{background:transparent}' +
+			'#nous-mem-list::-webkit-scrollbar-thumb{background:rgba(200,150,46,.3);border-radius:4px}' +
+			'.nous-mem-item{display:flex;align-items:flex-start;gap:6px;padding:6px 4px;' +
+			'border-bottom:1px solid rgba(255,255,255,.05)}' +
+			'.nous-mem-item:last-child{border-bottom:none}' +
+			'.nous-mem-text{flex:1;font-size:12px;line-height:1.4;word-break:break-word}' +
+			'.nous-mem-acts{display:flex;flex-direction:column;gap:3px;flex-shrink:0}' +
+			'.nous-mem-edit,.nous-mem-del{background:none;border:none;cursor:pointer;' +
+			'font-size:13px;padding:1px 3px;border-radius:4px;transition:background .1s}' +
+			'.nous-mem-edit:hover{background:rgba(200,150,46,.2)}' +
+			'.nous-mem-del:hover{background:rgba(220,60,60,.2)}' +
+			'.nous-mem-edit-row{display:flex;gap:5px;flex:1}' +
+			'.nous-mem-edit-inp{flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(200,150,46,.4);' +
+			'border-radius:6px;color:#eee;padding:3px 6px;font-size:12px}' +
+			'.nous-mem-save-btn,.nous-mem-cancel-btn{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px}' +
+			'.nous-mem-empty{opacity:.5;font-style:italic;padding:10px;text-align:center;font-size:12px}' +
+			'.nous-mem-loading{opacity:.6;padding:10px;text-align:center;font-size:12px}' +
+			/* rodape / adicionar */
+			'#nous-mem-foot{padding:8px 10px;border-top:1px solid rgba(255,255,255,.07);' +
+			'display:flex;gap:6px}' +
+			'#nous-mem-inp{flex:1;background:rgba(255,255,255,.07);' +
+			'border:1px solid rgba(255,255,255,.15);border-radius:8px;' +
+			'color:#eee;padding:6px 9px;font-size:12px}' +
+			'#nous-mem-inp::placeholder{color:#666}' +
+			'#nous-mem-add{background:rgba(200,150,46,.18);border:1px solid rgba(200,150,46,.4);' +
+			'color:#e7c069;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;' +
+			'font-weight:600;white-space:nowrap}' +
+			'#nous-mem-add:hover{background:rgba(200,150,46,.32)}';
+		var st = document.createElement('style');
+		st.id = 'nous-mem-style';
+		st.textContent = css;
+		document.head.appendChild(st);
+	}
+
+	/* ---- Icone cerebro ---- */
+	var BRAIN_SVG =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"' +
+		' stroke-linecap="round" stroke-linejoin="round">' +
+		'<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08' +
+		' 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-4.66z"/>' +
+		'<path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08' +
+		' 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-4.66z"/>' +
+		'</svg>';
+
+	/* ---- Botao flutuante ---- */
+	function ensureMemBtn() {
+		if (memBtnEl && document.body && document.body.contains(memBtnEl)) return;
+		if (!document.body) return;
+		memBtnEl = document.createElement('button');
+		memBtnEl.id = 'nous-mem-btn';
+		memBtnEl.type = 'button';
+		memBtnEl.title = 'O que o Nous sabe';
+		memBtnEl.setAttribute('aria-label', 'O que o Nous sabe');
+		memBtnEl.innerHTML = BRAIN_SVG;
+		memBtnEl.addEventListener('click', toggleMemPanel);
+		document.body.appendChild(memBtnEl);
+		buildMemPanel();
+	}
+
+	/* ---- Construcao do painel ---- */
+	function buildMemPanel() {
+		if (memPanelEl && document.body && document.body.contains(memPanelEl)) return;
+		if (!document.body) return;
+		memPanelEl = document.createElement('div');
+		memPanelEl.id = 'nous-mem-panel';
+		memPanelEl.classList.add('nous-hidden');
+		memPanelEl.innerHTML =
+			'<div id="nous-mem-head">' +
+			'<span>O que o Nous sabe</span>' +
+			'<button id="nous-mem-close" type="button" aria-label="Fechar">&#x2715;</button>' +
+			'</div>' +
+			'<div id="nous-per-row">' +
+			'<label>Persona</label>' +
+			'<select id="nous-per-sel"></select>' +
+			'<button id="nous-per-new" type="button">+ Nova</button>' +
+			'</div>' +
+			'<div id="nous-per-form">' +
+			'<input class="nous-per-inp" id="nous-per-name" type="text" placeholder="Nome da persona (ex.: trabalho)">' +
+			'<input class="nous-per-inp" id="nous-per-folder" type="text" placeholder="Pasta de arquivos (opcional)">' +
+			'<div class="nous-per-row2">' +
+			'<button class="nous-per-save" id="nous-per-create" type="button">Criar persona</button>' +
+			'<button class="nous-per-cancel" id="nous-per-cancel" type="button">Cancelar</button>' +
+			'</div></div>' +
+			'<div id="nous-mem-list"><div class="nous-mem-loading">Carregando...</div></div>' +
+			'<div id="nous-mem-foot">' +
+			'<input id="nous-mem-inp" type="text" placeholder="Adicionar memoria...">' +
+			'<button id="nous-mem-add" type="button">+ Salvar</button>' +
+			'</div>';
+		document.body.appendChild(memPanelEl);
+
+		memPanelEl.querySelector('#nous-mem-close').addEventListener('click', function() {
+			closeMemPanel();
+		});
+		memPanelEl.querySelector('#nous-per-new').addEventListener('click', function() {
+			var f = memPanelEl.querySelector('#nous-per-form');
+			f.classList.toggle('active');
+		});
+		memPanelEl.querySelector('#nous-per-cancel').addEventListener('click', function() {
+			memPanelEl.querySelector('#nous-per-form').classList.remove('active');
+		});
+		memPanelEl.querySelector('#nous-per-create').addEventListener('click', createPersona);
+		memPanelEl.querySelector('#nous-per-sel').addEventListener('change', function() {
+			switchPersona(this.value);
+		});
+		memPanelEl.querySelector('#nous-mem-add').addEventListener('click', addMemory);
+		memPanelEl.querySelector('#nous-mem-inp').addEventListener('keydown', function(e) {
+			if (e.key === 'Enter') addMemory();
+		});
+	}
+
+	function toggleMemPanel() {
+		memOpen = !memOpen;
+		if (!memPanelEl) buildMemPanel();
+		if (memOpen) {
+			memPanelEl.classList.remove('nous-hidden');
+			loadUserId(function(uid) {
+				if (!uid) {
+					memPanelEl.querySelector('#nous-mem-list').innerHTML =
+						'<div class="nous-mem-empty">Faca login para ver suas memorias.</div>';
+					return;
+				}
+				loadPersonas(function() { loadMemories(); });
+			});
+		} else {
+			closeMemPanel();
+		}
+	}
+
+	function closeMemPanel() {
+		memOpen = false;
+		if (memPanelEl) memPanelEl.classList.add('nous-hidden');
+	}
+
+	/* ---- Personas ---- */
+	function loadPersonas(cb) {
+		fetch(MEM_URL + '/personas', { cache: 'no-store' })
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				_personas = data || {};
+				var sel = memPanelEl.querySelector('#nous-per-sel');
+				fetch(MEM_URL + '/persona?user_id=' + encodeURIComponent(_nousUid), { cache: 'no-store' })
+					.then(function(r) { return r.json(); })
+					.then(function(d) {
+						_activePer = d.persona || 'default';
+						renderPersonaSel(sel);
+						if (cb) cb();
+					})
+					.catch(function() { if (cb) cb(); });
+			})
+			.catch(function() { if (cb) cb(); });
+	}
+
+	function renderPersonaSel(sel) {
+		if (!sel) return;
+		sel.innerHTML = '';
+		var keys = Object.keys(_personas).sort(function(a, b) {
+			if (a === 'default') return -1;
+			if (b === 'default') return 1;
+			return a.localeCompare(b);
+		});
+		keys.forEach(function(k) {
+			var opt = document.createElement('option');
+			opt.value = k;
+			opt.textContent = k === 'default' ? 'Padrao' : k;
+			if (k === _activePer) opt.selected = true;
+			sel.appendChild(opt);
+		});
+	}
+
+	function switchPersona(name) {
+		if (!_nousUid) return;
+		_activePer = name;
+		fetch(MEM_URL + '/persona', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ user_id: _nousUid, name: name })
+		}).then(function() { loadMemories(); }).catch(function() {});
+	}
+
+	function createPersona() {
+		var name   = (memPanelEl.querySelector('#nous-per-name').value || '').trim();
+		var folder = (memPanelEl.querySelector('#nous-per-folder').value || '').trim();
+		if (!name) return;
+		fetch(MEM_URL + '/persona/config', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: name, folder: folder, description: '' })
+		}).then(function() {
+			memPanelEl.querySelector('#nous-per-name').value = '';
+			memPanelEl.querySelector('#nous-per-folder').value = '';
+			memPanelEl.querySelector('#nous-per-form').classList.remove('active');
+			loadPersonas(function() { switchPersona(name); });
+		}).catch(function() {});
+	}
+
+	/* ---- Memorias ---- */
+	function loadMemories() {
+		if (!_nousUid) return;
+		var list = memPanelEl.querySelector('#nous-mem-list');
+		list.innerHTML = '<div class="nous-mem-loading">Carregando...</div>';
+		fetch(MEM_URL + '/memories?user_id=' + encodeURIComponent(_nousUid) +
+			'&persona=' + encodeURIComponent(_activePer), { cache: 'no-store' })
+			.then(function(r) { return r.json(); })
+			.then(function(mems) { renderMemories(mems); })
+			.catch(function() {
+				list.innerHTML = '<div class="nous-mem-empty">API offline — inicie o Nous normalmente.</div>';
+			});
+	}
+
+	function renderMemories(mems) {
+		var list = memPanelEl.querySelector('#nous-mem-list');
+		_editingId = null;
+		if (!mems || !mems.length) {
+			list.innerHTML = '<div class="nous-mem-empty">Nenhuma memoria nesta persona.</div>';
+			return;
+		}
+		list.innerHTML = '';
+		mems.forEach(function(m) {
+			var item = document.createElement('div');
+			item.className = 'nous-mem-item';
+			item.dataset.id = m.id;
+			item.innerHTML =
+				'<span class="nous-mem-text">' + _esc(m.text) + '</span>' +
+				'<div class="nous-mem-acts">' +
+				'<button class="nous-mem-edit" title="Editar" type="button">&#x270F;</button>' +
+				'<button class="nous-mem-del" title="Deletar" type="button">&#x1F5D1;</button>' +
+				'</div>';
+			item.querySelector('.nous-mem-edit').addEventListener('click', function() { startEdit(item, m); });
+			item.querySelector('.nous-mem-del').addEventListener('click', function() { deleteMem(m.id); });
+			list.appendChild(item);
+		});
+	}
+
+	function startEdit(item, m) {
+		_editingId = m.id;
+		var inp = document.createElement('input');
+		inp.className = 'nous-mem-edit-inp';
+		inp.type = 'text';
+		inp.value = m.text;
+		var saveBtn   = document.createElement('button');
+		saveBtn.type  = 'button';
+		saveBtn.className = 'nous-mem-save-btn';
+		saveBtn.textContent = '✓';
+		saveBtn.title = 'Salvar';
+		var cancelBtn = document.createElement('button');
+		cancelBtn.type  = 'button';
+		cancelBtn.className = 'nous-mem-cancel-btn';
+		cancelBtn.textContent = '✕';
+		cancelBtn.title = 'Cancelar';
+		var row = document.createElement('div');
+		row.className = 'nous-mem-edit-row';
+		row.appendChild(inp);
+		row.appendChild(saveBtn);
+		row.appendChild(cancelBtn);
+		item.innerHTML = '';
+		item.appendChild(row);
+		inp.focus();
+		saveBtn.addEventListener('click', function() { saveMem(m.id, inp.value); });
+		cancelBtn.addEventListener('click', loadMemories);
+		inp.addEventListener('keydown', function(e) {
+			if (e.key === 'Enter') saveMem(m.id, inp.value);
+			if (e.key === 'Escape') loadMemories();
+		});
+	}
+
+	function saveMem(id, text) {
+		text = (text || '').trim();
+		if (!text || !_nousUid) { loadMemories(); return; }
+		fetch(MEM_URL + '/memories/' + id, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ user_id: _nousUid, text: text })
+		}).then(function() { loadMemories(); }).catch(loadMemories);
+	}
+
+	function deleteMem(id) {
+		if (!_nousUid) return;
+		fetch(MEM_URL + '/memories/' + id + '?user_id=' + encodeURIComponent(_nousUid), {
+			method: 'DELETE'
+		}).then(function() { loadMemories(); }).catch(loadMemories);
+	}
+
+	function addMemory() {
+		var inp  = memPanelEl.querySelector('#nous-mem-inp');
+		var text = (inp.value || '').trim();
+		if (!text || !_nousUid) return;
+		fetch(MEM_URL + '/memories', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ user_id: _nousUid, text: text, persona: _activePer })
+		}).then(function() {
+			inp.value = '';
+			loadMemories();
+		}).catch(function() {});
+	}
+
+	function _esc(s) {
+		return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	}
 })();
