@@ -4,6 +4,28 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [2.0.0] - 2026-06-08
+### Adicionado
+- **Link "Criar conta" na tela de login** (`branding/nous-loader.js`): apos o
+  primeiro usuario criar sua conta, o Open WebUI escondia o formulario de cadastro
+  permanentemente. Agora o JS injeta um link discreto "Primeiro acesso? Criar conta"
+  abaixo do form de login, que leva para `/auth?mode=signup`. Zero config.
+- **Capability gate — badge de VRAM nos modelos** (`branding/nous-loader.js`): cada
+  modelo no dropdown do chat recebe um ponto colorido indicando se cabe na VRAM:
+  verde (< 85% da VRAM livre), amarelo (85-100%), vermelho (nao cabe). Dados em
+  tempo real do monitor local (porta 8990) + tamanhos do Ollama (`/api/tags`).
+  Atualiza a cada 10 s sem impacto de performance.
+- **Citacoes de fonte inline nas respostas RAG** (`files/nous_files.py`,
+  `history/nous_history.py`): quando o Nous usa arquivos ou historico de conversas
+  para responder, agora inclui ao final da resposta uma linha em markdown
+  `> Fontes consultadas: arquivo.md` / `> Contexto de conversas anteriores: data`.
+  Complementa o status transitorio (que some) com uma referencia permanente na
+  mensagem.
+### Nota
+- Split-chat (comparar dois modelos lado a lado) foi avaliado e adiado: requer
+  engenharia no frontend Svelte do Open WebUI; risco de regressao alto para o
+  ganho. Ficara' no roadmap para uma versao futura.
+
 ## [1.9.0] - 2026-06-08
 ### Adicionado
 - **Modelos de nuvem opcionais** (GPT-4, Claude, Gemini): `start-nous.ps1` agora

@@ -122,6 +122,7 @@ class Filter:
 
     def __init__(self):
         self.valves = self.Valves()
+        self._pending_dates = {}  # user_id -> [date_str, ...]
 
     def _ollama(self):
         return (self.valves.OLLAMA_URL
@@ -349,6 +350,10 @@ class Filter:
             messages.insert(0, {"role": "system", "content": block})
         body["messages"] = messages
 
+        uid = (__user__ or {}).get("id") or "_"
+        dates = [label for label, _ in chunks]
+        self._pending_dates[uid] = dates
+
         if __event_emitter__:
             n_chats = len(set(srcs))
             try:
@@ -364,4 +369,17 @@ class Filter:
         return body
 
     async def outlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
+        uid = (__user__ or {}).get("id") or "_"
+        dates = self._pending_dates.pop(uid, None)
+        if not dates:
+            return body
+        messages = body.get("messages", [])
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "assistant":
+                content = messages[i].get("content") or ""
+                uniq_dates = list(dict.fromkeys(dates))
+                citation = "\n\n> **Contexto de conversas anteriores:** " + ", ".join(uniq_dates)
+                messages[i]["content"] = content + citation
+                break
+        body["messages"] = messages
         return body

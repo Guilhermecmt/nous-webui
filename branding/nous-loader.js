@@ -260,30 +260,6 @@
 		document.body.classList.add('nous-shell-mark');
 	}
 
-	function tick() {
-		ensureToggle();
-		if (btn) btn.style.display = onHome() ? 'flex' : 'none';
-		paintToggle();
-		buildMonitor();
-		ensureTopWordmark();
-		ensureMemBtn();
-	}
-
-	function start() {
-		injectMonitorStyle();
-		injectMemStyle();
-		tick();
-		setInterval(tick, 500);
-		refreshMonitor();
-		setInterval(refreshMonitor, 3000);
-	}
-
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', start);
-	} else {
-		start();
-	}
-
 	/* ====================== Painel "O que o Nous sabe" ====================== */
 	var MEM_URL    = 'http://127.0.0.1:8993';
 	var memBtnEl   = null;
@@ -655,5 +631,168 @@
 
 	function _esc(s) {
 		return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+	}
+
+	/* ====================== Link "Criar conta" na tela de auth ====================== *
+	 * O Open WebUI esconde o botao "Criar conta" quando ENABLE_SIGNUP=False ou quando  *
+	 * o admin ja' existe. Injetamos um link discreto para /auth?mode=signup para que   *
+	 * novos usuarios possam se cadastrar sem terminal.                                  *
+	 * ================================================================================= */
+	function onAuth() {
+		return location.pathname === '/auth';
+	}
+
+	function ensureSignupLink() {
+		if (!onAuth()) {
+			var old = document.getElementById('nous-signup-link');
+			if (old) old.remove();
+			return;
+		}
+		/* Nao injeta em modo signup (o formulario ja' esta' aberto) */
+		if (location.search.indexOf('mode=signup') !== -1) {
+			var old2 = document.getElementById('nous-signup-link');
+			if (old2) old2.remove();
+			return;
+		}
+		if (document.getElementById('nous-signup-link')) return;
+		/* Aguarda o formulario de login estar no DOM */
+		var form = document.querySelector('form');
+		if (!form) return;
+		var link = document.createElement('p');
+		link.id = 'nous-signup-link';
+		link.style.cssText =
+			'text-align:center;margin-top:14px;font-size:13px;' +
+			'font-family:Inter,system-ui,sans-serif;color:#888;';
+		link.innerHTML =
+			'Primeiro acesso? <a href="/auth?mode=signup" ' +
+			'style="color:#c8962e;text-decoration:none;font-weight:600;" ' +
+			'onmouseover="this.style.textDecoration=\'underline\'" ' +
+			'onmouseout="this.style.textDecoration=\'none\'">' +
+			'Criar conta</a>';
+		/* Insere depois do form */
+		form.parentNode.insertBefore(link, form.nextSibling);
+	}
+
+	/* ====================== Capability gate (badge VRAM nos modelos) ==================
+	 * Mostra um badge colorido ao lado de cada modelo no dropdown do chat:
+	 *   🟢 verde  — cabe confortavelmente na VRAM disponivel (< 85%)
+	 *   🟡 amarelo — cabe mas apertado (85-100% da VRAM)
+	 *   🔴 vermelho — nao cabe (maior que a VRAM disponivel)
+	 *   ⚪ cinza   — sem informacao de tamanho
+	 * Dados: /api/tags do Ollama (tamanho) + /stats do monitor (VRAM livre).
+	 * ================================================================================= */
+	var _capModels  = {};   /* { modelName: sizeBytes } */
+	var _capVramFree = -1;  /* bytes livres; -1 = nao inicializado */
+	var _capLastFetch = 0;
+
+	function _capRefresh() {
+		var now = Date.now();
+		if (now - _capLastFetch < 10000) return; /* atualiza a cada 10s */
+		_capLastFetch = now;
+		/* VRAM livre via monitor */
+		fetch(MON_URL + '/stats', { cache: 'no-store' })
+			.then(function(r) { return r.json(); })
+			.then(function(s) {
+				var g = s.gpu || {};
+				if (g.ded_total && g.ded_used != null) {
+					_capVramFree = g.ded_total - g.ded_used;
+				}
+			}).catch(function() {});
+		/* Tamanhos dos modelos via Ollama */
+		fetch('http://127.0.0.1:11434/api/tags', { cache: 'no-store' })
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				var models = data.models || [];
+				models.forEach(function(m) {
+					if (m.name && m.size) _capModels[m.name] = m.size;
+					/* Ollama retorna nome com tag; normaliza sem tag para match parcial */
+					var base = m.name.split(':')[0];
+					if (base && m.size) _capModels[base] = m.size;
+				});
+			}).catch(function() {});
+	}
+
+	function _capBadge(modelName) {
+		if (_capVramFree < 0) return '';
+		/* Tenta match exato, depois base (sem tag), depois prefixo */
+		var sz = _capModels[modelName];
+		if (!sz) {
+			var base = (modelName || '').split(':')[0];
+			sz = _capModels[base];
+		}
+		if (!sz) return '';
+		var ratio = sz / (_capVramFree || 1);
+		var dot, tip;
+		if (ratio <= 0.85)      { dot = '#3ad07a'; tip = 'Cabe bem na VRAM'; }
+		else if (ratio <= 1.0)  { dot = '#f5a623'; tip = 'Cabe (VRAM apertada)'; }
+		else                    { dot = '#e05252'; tip = 'Pode nao caber na VRAM'; }
+		return '<span title="' + tip + '" style="display:inline-block;width:8px;height:8px;' +
+			'border-radius:50%;background:' + dot + ';margin-left:6px;flex-shrink:0;' +
+			'vertical-align:middle;box-shadow:0 0 4px ' + dot + '55"></span>';
+	}
+
+	function _capApply() {
+		/* Funciona para o dropdown de modelos do Open WebUI (lista de <button> com texto) */
+		var items = document.querySelectorAll('[data-nous-cap]');
+		items.forEach(function(el) { el.removeAttribute('data-nous-cap'); });
+
+		/* O Open WebUI renderiza os modelos em botoes ou opcoes dentro de um dropdown */
+		var candidates = document.querySelectorAll(
+			'[aria-label*="Model"], [aria-label*="model"], ' +
+			'.model-item, [data-model-id], ' +
+			'button[id*="model"], li[id*="model"]'
+		);
+		/* Fallback: qualquer elemento que tenha um atributo data-value ou similar */
+		if (!candidates.length) return;
+
+		candidates.forEach(function(el) {
+			if (el.querySelector('.nous-cap-dot')) return; /* ja tem badge */
+			var name = el.getAttribute('data-model-id') ||
+				el.getAttribute('data-value') ||
+				el.getAttribute('value') ||
+				(el.textContent || '').trim().split('\n')[0].trim();
+			if (!name) return;
+			var badge = _capBadge(name);
+			if (!badge) return;
+			el.setAttribute('data-nous-cap', '1');
+			/* Injeta badge como ultimo elemento inline */
+			var span = document.createElement('span');
+			span.className = 'nous-cap-dot';
+			span.innerHTML = badge;
+			el.appendChild(span);
+		});
+	}
+
+	/* Inicia refresh de dados de capacidade periodicamente */
+	function startCapGate() {
+		_capRefresh();
+		setInterval(_capRefresh, 10000);
+		setInterval(_capApply, 1000);
+	}
+
+	function tick() {
+		ensureToggle();
+		if (btn) btn.style.display = onHome() ? 'flex' : 'none';
+		paintToggle();
+		buildMonitor();
+		ensureTopWordmark();
+		ensureMemBtn();
+		ensureSignupLink();
+	}
+
+	function start() {
+		injectMonitorStyle();
+		injectMemStyle();
+		tick();
+		setInterval(tick, 500);
+		refreshMonitor();
+		setInterval(refreshMonitor, 3000);
+		startCapGate();
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', start);
+	} else {
+		start();
 	}
 })();

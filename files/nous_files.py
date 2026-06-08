@@ -112,6 +112,7 @@ class Filter:
 
     def __init__(self):
         self.valves = self.Valves()
+        self._pending_srcs = {}  # user_id -> [src, ...]
 
     # ------- infra -------
     def _ollama(self):
@@ -321,8 +322,11 @@ class Filter:
             messages.insert(0, {"role": "system", "content": block})
         body["messages"] = messages
 
+        uniq = list(dict.fromkeys(srcs))
+        uid = (__user__ or {}).get("id") or "_"
+        self._pending_srcs[uid] = uniq
+
         if __event_emitter__:
-            uniq = list(dict.fromkeys(srcs))
             try:
                 await __event_emitter__({
                     "type": "status",
@@ -334,4 +338,16 @@ class Filter:
         return body
 
     async def outlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
+        uid = (__user__ or {}).get("id") or "_"
+        srcs = self._pending_srcs.pop(uid, None)
+        if not srcs:
+            return body
+        messages = body.get("messages", [])
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "assistant":
+                content = messages[i].get("content") or ""
+                citation = "\n\n> **Fontes consultadas:** " + ", ".join(f"`{s}`" for s in srcs)
+                messages[i]["content"] = content + citation
+                break
+        body["messages"] = messages
         return body
