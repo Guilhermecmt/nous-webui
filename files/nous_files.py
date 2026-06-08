@@ -57,6 +57,23 @@ def _db_path():
     return os.path.join(_data_dir(), DB_NAME)
 
 
+def _db_sig(db):
+    """Assinatura que muda a cada commit, MESMO em modo WAL — onde o mtime do
+    arquivo principal nao muda (a escrita vai para o -wal). Sem isto, o cache do
+    filtro serviria um indice velho ate o proximo checkpoint do WAL."""
+    try:
+        main = os.path.getmtime(db)
+    except OSError:
+        return None
+    wal = None
+    try:
+        st = os.stat(db + "-wal")
+        wal = (st.st_mtime, st.st_size)
+    except OSError:
+        pass
+    return (main, wal)
+
+
 # palavras vazias (PT + algumas EN): nao servem para busca por palavra-chave e,
 # se mantidas, batem em quase tudo (ex.: "como" em "Raspberry Pi como servidor").
 _STOP = {
@@ -141,9 +158,8 @@ class Filter:
         db = _db_path()
         if not os.path.isfile(db):
             return False
-        try:
-            mtime = os.path.getmtime(db)
-        except OSError:
+        mtime = _db_sig(db)
+        if mtime is None:
             return False
         if _CACHE["mtime"] == mtime and (_CACHE["ids"] or _CACHE["mat"] is not None):
             return True

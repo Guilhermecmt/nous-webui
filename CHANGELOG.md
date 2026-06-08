@@ -4,6 +4,43 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.9.0] - 2026-06-08
+### Adicionado
+- **Modelos de nuvem opcionais** (GPT-4, Claude, Gemini): `start-nous.ps1` agora
+  liga explicitamente `ENABLE_OPENAI_API=True`. O usuario pode adicionar uma chave
+  em Admin > Settings > Connections (OpenRouter recomendado para Claude/Gemini).
+  Sem chave, nada sai da maquina — o Nous segue 100% local por padrao. README (EN/PT)
+  documenta o passo a passo e deixa claro: memoria, arquivos e historico SEMPRE usam
+  o Ollama local, mesmo com chat via nuvem.
+### Corrigido
+- **[CRITICO] Historico indexava texto corrompido** (`history/index_history.py`): a
+  coluna `content` do `webui.db` vem JSON-encoded (string entre aspas, com escapes
+  `\uXXXX`). O parser so' decodificava quando comecava com `[`/`{`, entao indexava o
+  literal com aspas e acentos quebrados, e as respostas do assistente entravam
+  poluidas com blocos `<details type="reasoning">`. Agora decodifica strings JSON
+  e remove blocos de raciocinio/HTML. Indices antigos sao reconstruidos no proximo
+  boot (controle por `PARSER_VERSION` na tabela `meta`).
+- **Cache do retrieval nao atualizava em modo WAL** (`history/nous_history.py`,
+  `files/nous_files.py`): a invalidacao por `mtime` do arquivo principal nunca
+  disparava (em WAL a escrita vai para o `-wal`), servindo um indice velho ate o
+  proximo checkpoint. Agora a assinatura inclui mtime+tamanho do `-wal`.
+- **API de memoria sem protecao de origem** (`memory/nous_memory_api.py`): CORS `*`
+  permitia que qualquer site aberto no navegador chamasse a porta 8993 (CSRF local) e,
+  p.ex., apontasse a pasta indexada para a home do usuario, exfiltrando arquivos via
+  contexto. Agora so' aceita origem local (localhost/127.0.0.1) e reflete essa origem
+  em vez de `*`. Escritas de JSON viraram atomicas (tmp + replace) e bodies malformados
+  retornam 400 em vez de 500.
+- **`exclude_chat` do historico nunca funcionava** (`history/nous_history.py`): o
+  `chat_id` chega por `__metadata__`, nao na raiz de `body`. Sem ele, o filtro podia
+  reinjetar a propria conversa atual (contexto circular). Assinatura do `inlet`
+  corrigida.
+- **Re-scan eterno do historico** (`history/index_history.py`): a marca d'agua so'
+  avancava quando algo era indexado; conversas so' com mensagens curtas eram
+  revarridas a cada ciclo. Agora avanca por toda mensagem vista.
+- **Troca de modelo de embedding quebrava a busca** (`history/index_history.py`):
+  dimensoes diferentes viravam vetores mortos para sempre (sem re-embed). Agora o
+  indice e' reconstruido automaticamente quando `NOUS_EMBED_MODEL` muda.
+
 ## [1.8.0] - 2026-06-08
 ### Adicionado
 - **Painel "O que o Nous sabe" — Fase 3** (`memory/nous_memory_api.py`): micro-servico

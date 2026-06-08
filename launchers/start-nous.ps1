@@ -39,6 +39,13 @@ if (Test-Path $manifestPath) {
     } catch {}
 }
 
+# Modelos de NUVEM opcionais (GPT-4, Claude via OpenRouter, Gemini...). Deixamos a
+# conexao OpenAI-compativel LIGADA para que o usuario POSSA adicionar uma chave em
+# Admin > Settings > Connections se quiser. Sem chave, nada acontece e nada sai da
+# maquina — o Nous continua 100% local por padrao. A memoria, os arquivos e o
+# historico SEMPRE usam o Ollama local, mesmo que o chat use um modelo de nuvem.
+$env:ENABLE_OPENAI_API = "True"
+
 # Chave secreta ESTAVEL: sem ela, o open-webui gera uma nova a cada inicio e
 # desloga voce. Guardamos uma chave local (em NousData, fora do git) e a reusamos.
 $keyFile = Join-Path $env:DATA_DIR ".webui_secret_key"

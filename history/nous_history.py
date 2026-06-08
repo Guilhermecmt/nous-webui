@@ -75,6 +75,23 @@ def _db_path():
     return os.path.join(_data_dir(), DB_NAME)
 
 
+def _db_sig(db):
+    """Assinatura que muda a cada commit, MESMO em modo WAL — onde o mtime do
+    arquivo principal nao muda (a escrita vai para o -wal). Sem isto, o cache do
+    filtro nunca enxergaria os dialogos recem-indexados ate um checkpoint."""
+    try:
+        main = os.path.getmtime(db)
+    except OSError:
+        return None
+    wal = None
+    try:
+        st = os.stat(db + "-wal")
+        wal = (st.st_mtime, st.st_size)
+    except OSError:
+        pass
+    return (main, wal)
+
+
 def _tokens(text):
     toks = re.findall(r"[0-9A-Za-zÀ-ÿ]{3,}", (text or "").lower())
     seen, out = set(), []
@@ -131,12 +148,11 @@ class Filter:
         db = _db_path()
         if not os.path.isfile(db):
             return False
-        try:
-            mtime = os.path.getmtime(db)
-        except OSError:
+        sig = _db_sig(db)
+        if sig is None:
             return False
 
-        cache_key = (mtime, user_id)
+        cache_key = (sig, user_id)
         if _CACHE["key"] == cache_key and (_CACHE["ids"] or _CACHE["mat"] is not None):
             return True
 
@@ -289,7 +305,8 @@ class Filter:
 
     # ---- ciclo --------------------------------------------------------------
 
-    async def inlet(self, body: dict, __user__: Optional[dict] = None, __event_emitter__=None) -> dict:
+    async def inlet(self, body: dict, __user__: Optional[dict] = None,
+                    __event_emitter__=None, __metadata__: Optional[dict] = None) -> dict:
         if not self.valves.ENABLED:
             return body
 
@@ -310,7 +327,8 @@ class Filter:
             return body
 
         user_id = (__user__ or {}).get("id") or None
-        current_chat = body.get("chat_id") or None
+        # No Open WebUI o chat_id chega por __metadata__, nao na raiz de body.
+        current_chat = (__metadata__ or {}).get("chat_id") or body.get("chat_id") or None
 
         try:
             chunks, srcs = self._retrieve(user_text, user_id=user_id, exclude_chat=current_chat)

@@ -9,7 +9,7 @@
 Chat · Vision · Local image generation · Web search — 100% on your PC.  
 No cloud. No API keys. Nothing ever leaves your machine.
 
-[![version](https://img.shields.io/badge/version-1.8.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.9.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requirements)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20private-2ea44f)](#why-nous)
@@ -123,6 +123,17 @@ The table below shows a few popular examples — these are just suggestions, not
 | 32 GB+ | `gemma4:12b` | ~5 GB | Full quality, but slow (1–2 min/reply) |
 
 > Browse the full catalogue at **[ollama.com/library](https://ollama.com/library)**. Any model listed there works with Nous.
+
+### Cloud models (optional) — GPT-4, Claude, Gemini
+
+Nous is **local by default**, but if you ever want more power you can *optionally* plug in a paid cloud model. Nothing changes unless you add a key — without one, Nous stays 100% local.
+
+1. Open the chat → **Admin Panel → Settings → Connections → OpenAI → +**.
+2. Paste a base URL and your API key, then **Save**. The models appear in the selector at the top.
+   - **GPT-4 / GPT-4o** — URL `https://api.openai.com/v1` + your OpenAI key.
+   - **Claude + Gemini + GPT, one key** — URL `https://openrouter.ai/api/v1` + your [OpenRouter](https://openrouter.ai) key. (This is the recommended way to use Claude, which isn't directly OpenAI-compatible.)
+
+> **Your data stays yours, even with a cloud model.** Memory, files and history always run on your local Ollama — only the text of the current conversation is sent to the provider you chose. A cloud model never sees your indexed notes or your stored memories.
 
 ---
 

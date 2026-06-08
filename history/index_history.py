@@ -15,6 +15,7 @@ USO:
     (sem --once roda em modo watch: 60 s por ciclo)
 """
 import os
+import re
 import sys
 import json
 import time
@@ -40,6 +41,7 @@ OVERLAP_SECS  = 3600          # 1 h de sobreposicao: captura respostas que chega
 MIN_TEXT_LEN  = 15            # ignora mensagens muito curtas ("ok", emojis, etc.)
 EMBED_MODEL   = os.environ.get("NOUS_EMBED_MODEL", "nomic-embed-text")
 OLLAMA_URL    = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+PARSER_VERSION = "2"          # bump => forca reindex (mudou a extracao de texto)
 
 
 # ---- caminhos ---------------------------------------------------------------
@@ -53,15 +55,25 @@ def resolve_data_dir(arg):
 
 # ---- texto ------------------------------------------------------------------
 
+_RE_REASONING = re.compile(r"<details[^>]*reasoning.*?</details>", re.IGNORECASE | re.DOTALL)
+_RE_TAG       = re.compile(r"<[^>]+>")
+
+
 def _extract_text(raw) -> str:
-    """Extrai texto plano de content (str, JSON list/dict, bytes)."""
+    """Extrai texto plano de content (str, JSON list/dict, bytes).
+
+    IMPORTANTE: no webui.db a coluna `content` vem JSON-encoded — uma string
+    entre aspas (ex.: "Ol\\u00e1, tudo bem?"). Sem decodificar, indexariamos o
+    literal com aspas e escapes unicode. Por isso tentamos json.loads tambem
+    quando a string comeca com aspas, nao so' com [ ou {.
+    """
     if not raw:
         return ""
     if isinstance(raw, (bytes, bytearray)):
         raw = raw.decode("utf-8", errors="ignore")
     if isinstance(raw, str):
         s = raw.strip()
-        if s.startswith(("[", "{")):
+        if s[:1] in ('"', '[', '{'):
             try:
                 return _extract_text(json.loads(s))
             except Exception:
@@ -78,6 +90,19 @@ def _extract_text(raw) -> str:
     return str(raw).strip()
 
 
+def _clean_text(s: str) -> str:
+    """Remove blocos de raciocinio (<details type=reasoning>) e tags HTML que o
+    Open WebUI guarda na resposta do assistente — senao o historico fica
+    dominado por '<details>', '<summary>' etc. em vez do texto util."""
+    if not s:
+        return ""
+    s = _RE_REASONING.sub(" ", s)
+    s = _RE_TAG.sub(" ", s)
+    s = re.sub(r"[ \t]+", " ", s)
+    s = re.sub(r"\n{3,}", "\n\n", s)
+    return s.strip()
+
+
 def _pair_messages(msgs):
     """
     Agrupa linhas (id, user_id, role, content, output, created_at) em pares dialogo.
@@ -92,7 +117,7 @@ def _pair_messages(msgs):
             asst_text = ""
             if i + 1 < len(msgs) and msgs[i + 1][2] == "assistant":
                 raw_asst = msgs[i + 1][3] or msgs[i + 1][4]  # content ou output
-                asst_text = _extract_text(raw_asst)
+                asst_text = _clean_text(_extract_text(raw_asst))
                 i += 2
             else:
                 i += 1
@@ -138,6 +163,10 @@ def open_hist(db_path):
             key TEXT PRIMARY KEY, value INTEGER DEFAULT 0
         )""")
     cx.execute("""
+        CREATE TABLE IF NOT EXISTS meta (
+            key TEXT PRIMARY KEY, value TEXT
+        )""")
+    cx.execute("""
         CREATE TABLE IF NOT EXISTS dialogues (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             msg_id     TEXT    UNIQUE NOT NULL,
@@ -159,15 +188,44 @@ def open_hist(db_path):
 
 # ---- ciclo de indexacao -----------------------------------------------------
 
+def check_reindex_needed(hist_cx, log=print):
+    """Reconstroi o indice do zero se o modelo de embedding mudou (dimensao pode
+    diferir) ou se a versao do parser de texto mudou (indice antigo corrompido).
+    Idempotente: roda a cada ciclo, mas so' apaga quando algo realmente mudou."""
+    pv = hist_cx.execute("SELECT value FROM meta WHERE key='parser_version'").fetchone()
+    em = hist_cx.execute("SELECT value FROM meta WHERE key='embed_model'").fetchone()
+    has_rows = hist_cx.execute("SELECT 1 FROM dialogues LIMIT 1").fetchone() is not None
+
+    need = False
+    if pv is None and has_rows:
+        need = True                         # indice anterior 'a correcao do parser
+    elif pv is not None and pv[0] != PARSER_VERSION:
+        need = True
+    if em is not None and em[0] != EMBED_MODEL:
+        need = True                         # trocou o modelo de embedding
+
+    if need:
+        hist_cx.execute("DELETE FROM dialogues")
+        hist_cx.execute("DELETE FROM dialogues_fts")
+        hist_cx.execute("DELETE FROM sync_state")
+        log("  [~] reindexando historico do zero (parser/modelo mudou)")
+    hist_cx.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('parser_version',?)", (PARSER_VERSION,))
+    hist_cx.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('embed_model',?)", (EMBED_MODEL,))
+    hist_cx.commit()
+
+
 def index_once(hist_cx, webui_db, log=print):
     """Le novas conversas do webui.db e indexa pares de dialogo. Retorna (added)."""
     if not os.path.isfile(webui_db):
         return 0
 
+    check_reindex_needed(hist_cx, log)
+
     row = hist_cx.execute(
         "SELECT value FROM sync_state WHERE key='last_indexed_at'"
     ).fetchone()
-    last_ts = (row[0] if row else 0) - OVERLAP_SECS
+    stored_ts = row[0] if row else 0
+    last_ts   = stored_ts - OVERLAP_SECS
 
     # Abre webui.db em modo somente-leitura (evita lock com o servidor)
     try:
@@ -179,7 +237,7 @@ def index_once(hist_cx, webui_db, log=print):
             return 0
 
     added = 0
-    new_max_ts = last_ts + OVERLAP_SECS
+    seen_max_ts = stored_ts   # maior created_at JA' visto; sobe mesmo sem indexar
 
     try:
         tables = {r[0] for r in src.execute(
@@ -204,6 +262,12 @@ def index_once(hist_cx, webui_db, log=print):
                    ORDER BY created_at ASC""",
                 (chat_id,),
             ).fetchall()
+
+            # Avanca a marca d'agua por TODA mensagem vista (mesmo curta/sem par),
+            # senao conversas curtas seriam re-varridas a cada ciclo, para sempre.
+            for m in msgs:
+                if m[5]:
+                    seen_max_ts = max(seen_max_ts, m[5])
 
             for pair in _pair_messages(msgs):
                 # Deduplicacao: msg_id ja' indexado? pula.
@@ -233,19 +297,21 @@ def index_once(hist_cx, webui_db, log=print):
                         "INSERT INTO dialogues_fts(rowid, user_msg, asst_msg) VALUES (?,?,?)",
                         (cur.lastrowid, pair["user_msg"], pair["asst_msg"] or ""),
                     )
-                    new_max_ts = max(new_max_ts, pair["created_at"])
                     added += 1
                 except sqlite3.IntegrityError:
                     pass  # corrida rara: ja' inserido por outro ciclo
 
         hist_cx.commit()
 
-        if added:
+        # Persiste a marca d'agua sempre que avancou — mesmo com added==0 (so'
+        # mensagens curtas), evitando re-scan eterno dos mesmos chats.
+        if seen_max_ts > stored_ts:
             hist_cx.execute(
                 "INSERT OR REPLACE INTO sync_state(key, value) VALUES ('last_indexed_at',?)",
-                (new_max_ts,),
+                (seen_max_ts,),
             )
             hist_cx.commit()
+        if added:
             log(f"  [+] {added} dialogo(s) indexado(s) no historico")
 
     finally:

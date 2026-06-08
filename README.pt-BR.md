@@ -9,7 +9,7 @@
 Chat · Visão · Geração de imagem local · Busca na web — 100% no seu PC.  
 Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 
-[![version](https://img.shields.io/badge/version-1.8.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.9.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requisitos)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20privado-2ea44f)](#por-que-o-nous)
@@ -123,6 +123,17 @@ A tabela abaixo traz alguns exemplos populares — são sugestões, não obriga�
 | 32 GB+ | `gemma4:12b` | ~5 GB | Qualidade completa, mas lento (1–2 min/resposta) |
 
 > Veja o catálogo completo em **[ollama.com/library](https://ollama.com/library)**. Qualquer modelo listado lá funciona com o Nous.
+
+### Modelos de nuvem (opcional) — GPT-4, Claude, Gemini
+
+O Nous é **local por padrão**, mas se um dia você quiser mais potência pode *opcionalmente* plugar um modelo pago de nuvem. Nada muda enquanto você não adicionar uma chave — sem ela, o Nous continua 100% local.
+
+1. Abra o chat → **Admin Panel → Settings → Connections → OpenAI → +**.
+2. Cole a URL base e a sua chave de API e clique em **Save**. Os modelos aparecem no seletor no topo.
+   - **GPT-4 / GPT-4o** — URL `https://api.openai.com/v1` + sua chave da OpenAI.
+   - **Claude + Gemini + GPT, uma só chave** — URL `https://openrouter.ai/api/v1` + sua chave do [OpenRouter](https://openrouter.ai). (É a forma recomendada de usar o Claude, que não é diretamente compatível com OpenAI.)
+
+> **Seus dados continuam seus, mesmo com um modelo de nuvem.** Memória, arquivos e histórico rodam sempre no seu Ollama local — só o texto da conversa atual é enviado ao provedor que você escolheu. Um modelo de nuvem nunca vê suas notas indexadas nem suas memórias guardadas.
 
 ---
 

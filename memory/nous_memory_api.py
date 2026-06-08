@@ -24,6 +24,7 @@ import re
 import json
 import time
 import sqlite3
+import urllib.parse
 from aiohttp import web
 
 PORT        = 8993
@@ -60,9 +61,14 @@ def _read_json(path, default=None):
 
 
 def _write_json(path, data):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    # Escrita ATOMICA: grava em .tmp e troca de uma vez. Sem isto, o leitor
+    # (Open WebUI / indexador) pode pegar um JSON truncado no meio da escrita.
+    d = os.path.dirname(path) or "."
+    os.makedirs(d, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)
 
 
 # ---- personas ---------------------------------------------------------------
@@ -223,6 +229,14 @@ def delete_memory(mem_id, user_id):
 
 # ---- handlers ---------------------------------------------------------------
 
+async def _json_body(request):
+    """Le o corpo JSON com tolerancia: retorna None se nao for JSON valido."""
+    try:
+        return await request.json()
+    except Exception:
+        return None
+
+
 async def h_health(request):
     return web.json_response({"ok": True})
 
@@ -236,7 +250,9 @@ async def h_list(request):
 
 
 async def h_add(request):
-    body = await request.json()
+    body = await _json_body(request)
+    if body is None:
+        return web.json_response({"error": "invalid json"}, status=400)
     uid  = body.get("user_id")
     text = (body.get("text") or "").strip()
     if not uid or not text:
@@ -252,7 +268,9 @@ async def h_edit(request):
         mid = int(request.match_info["id"])
     except Exception:
         return web.json_response({"error": "invalid id"}, status=400)
-    body = await request.json()
+    body = await _json_body(request)
+    if body is None:
+        return web.json_response({"error": "invalid json"}, status=400)
     uid  = body.get("user_id")
     text = (body.get("text") or "").strip()
     if not uid or not text:
@@ -281,7 +299,9 @@ async def h_get_active(request):
 
 
 async def h_set_active(request):
-    body = await request.json()
+    body = await _json_body(request)
+    if body is None:
+        return web.json_response({"error": "invalid json"}, status=400)
     uid  = body.get("user_id", "default")
     name = (body.get("name") or body.get("persona") or "default").strip()
     set_active_persona(uid, name)
@@ -289,7 +309,9 @@ async def h_set_active(request):
 
 
 async def h_save_persona(request):
-    body = await request.json()
+    body = await _json_body(request)
+    if body is None:
+        return web.json_response({"error": "invalid json"}, status=400)
     name = (body.get("name") or "").strip()
     if not name:
         return web.json_response({"error": "name required"}, status=400)
@@ -304,21 +326,43 @@ async def h_del_persona(request):
     return web.json_response({"ok": remove_persona(name)})
 
 
-# ---- CORS / app -------------------------------------------------------------
+# ---- CORS / origem ----------------------------------------------------------
+# A API mexe em dados do usuario (memorias, pasta indexada). Com CORS '*' qualquer
+# site aberto no navegador poderia chama-la (CSRF local) e, p.ex., apontar a pasta
+# de arquivos para C:\Users\... exfiltrando dados via contexto do chat. Por isso so'
+# aceitamos chamadas de origem local (o proprio Nous em localhost) — e refletimos
+# exatamente essa origem em vez de '*'. Ferramentas locais (curl, sem header Origin)
+# continuam funcionando.
 
-_CORS = {
-    "Access-Control-Allow-Origin":  "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-}
+def _origin_ok(origin):
+    if not origin:
+        return True   # sem Origin = nao e' fetch de navegador (curl/servico local)
+    try:
+        host = urllib.parse.urlparse(origin).hostname
+    except Exception:
+        return False
+    return host in ("localhost", "127.0.0.1", "::1")
+
+
+def _cors_headers(origin):
+    return {
+        "Access-Control-Allow-Origin":  origin if (origin and _origin_ok(origin)) else "null",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Vary": "Origin",
+    }
 
 
 @web.middleware
 async def cors_mw(request, handler):
+    origin = request.headers.get("Origin")
+    if not _origin_ok(origin):
+        return web.json_response({"error": "forbidden origin"}, status=403,
+                                 headers=_cors_headers(origin))
     if request.method == "OPTIONS":
-        return web.Response(status=204, headers=_CORS)
+        return web.Response(status=204, headers=_cors_headers(origin))
     resp = await handler(request)
-    resp.headers.update(_CORS)
+    resp.headers.update(_cors_headers(origin))
     return resp
 
 
