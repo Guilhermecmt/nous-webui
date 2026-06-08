@@ -27,10 +27,17 @@ $env:RAG_WEB_SEARCH_ENGINE   = "duckduckgo"
 # embedding) - sem isto, o Gemma responde "nao tenho acesso em tempo real".
 $env:BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL = "True"
 $env:PORT                = "8080"
-# UX p/ leigos: tira o "Arena Model" (confunde) e ja' deixa o gemma4:12b
-# pre-selecionado no chat novo, para o usuario nao precisar escolher nada.
+# Tira o "Arena Model" (confunde usuarios). DEFAULT_MODELS so' e' definido se
+# o instalador gravou um modelo escolhido; caso contrario o Open WebUI deixa o
+# usuario escolher livremente sem pre-selecao forcada.
 $env:ENABLE_EVALUATION_ARENA_MODELS = "False"
-$env:DEFAULT_MODELS                 = "gemma4:12b"
+$manifestPath = Join-Path $env:DATA_DIR "install-manifest.json"
+if (Test-Path $manifestPath) {
+    try {
+        $man = Get-Content $manifestPath -Raw | ConvertFrom-Json
+        if ($man.model) { $env:DEFAULT_MODELS = $man.model }
+    } catch {}
+}
 
 # Chave secreta ESTAVEL: sem ela, o open-webui gera uma nova a cada inicio e
 # desloga voce. Guardamos uma chave local (em NousData, fora do git) e a reusamos.

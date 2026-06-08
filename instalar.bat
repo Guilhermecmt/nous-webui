@@ -1,8 +1,6 @@
 @echo off
 REM ============================================================
-REM  Nous - Instalador (clique duplo). Funciona de qualquer pasta:
-REM  resolve o proprio caminho e roda o instalador do PowerShell
-REM  com a politica liberada so' para esta execucao.
+REM  Nous - Instalador (clique duplo). Funciona de qualquer pasta.
 REM ============================================================
 title Instalador do Nous
 cd /d "%~dp0"
@@ -12,10 +10,9 @@ echo             Instalador do Nous
 echo ============================================
 echo.
 echo Isto instala tudo que o Nous precisa:
-echo   - Ollama (motor do modelo)
+echo   - Ollama (motor dos modelos de IA)
 echo   - Python + Open WebUI (a interface)
 echo   - a identidade Nous (tema, logo, memoria)
-echo   - o modelo de IA recomendado para sua maquina
 echo.
 echo Pode levar varios minutos e baixar alguns GB.
 echo Se aparecer um aviso do Windows, escolha "Sim".
@@ -28,9 +25,9 @@ if not "%~1"=="" (
     goto fim
 )
 
-REM ---- Detecta o hardware e escolhe o modelo certo ----
+REM ---- Analisa o hardware ----
 echo.
-echo Analisando sua maquina para escolher o modelo ideal...
+echo Analisando sua maquina...
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\check-system.ps1"
 set CHECK_EXIT=%errorlevel%
@@ -45,17 +42,23 @@ if %CHECK_EXIT%==1 (
     exit /b 1
 )
 
-REM EXIT 0 = GPU capaz -> gemma4:12b (modelo padrao, bom para todos os dias)
-REM EXIT 2 = so CPU   -> gemma4:e4b  (modelo leve, mais rapido sem GPU)
-if %CHECK_EXIT%==0 (
-    set "NOUS_MODEL=gemma4:12b"
-) else (
-    set "NOUS_MODEL=gemma4:e4b"
-)
+echo.
+echo ============================================
+echo  Qual modelo voce quer instalar?
+echo ============================================
+echo.
+echo  Veja as recomendacoes acima de acordo com sua maquina.
+echo  Voce pode usar QUALQUER modelo disponivel no Ollama
+echo  (https://ollama.com/library) - nao so' os listados acima.
+echo.
+echo  Exemplos populares:
+echo    gemma4:12b   llama3.2    mistral    phi4    deepseek-r1
+echo.
+set /p NOUS_MODEL="Digite o nome do modelo (ou pressione ENTER para gemma4:12b): "
+if "%NOUS_MODEL%"=="" set "NOUS_MODEL=gemma4:12b"
 
 echo.
-echo Modelo selecionado automaticamente: %NOUS_MODEL%
-echo (voce pode trocar por outro depois, dentro do Nous)
+echo Modelo escolhido: %NOUS_MODEL%
 echo.
 pause
 

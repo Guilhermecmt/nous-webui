@@ -84,9 +84,11 @@ When it finishes, **open Nous from the Desktop shortcut**.
 
 The first screen asks you to sign up. Enter any name, any email, any password — this account stays on your machine only. **The first account created is automatically the administrator.**
 
-**Step 2 — The model is already selected**
+**Step 2 — Select your model**
 
-The installer downloaded a model matched to your hardware. You'll see its name in the model selector at the top of the chat. Just click it and start chatting.
+The installer downloaded the model you chose. You'll see its name in the model selector at the top of the chat. Click it and start chatting.
+
+> Want a different model? Click the model name at the top → Search → type any model name from [ollama.com/library](https://ollama.com/library) → Download.
 
 **Step 3 — Start talking**
 
@@ -96,25 +98,31 @@ Type anything. Nous is ready.
 
 ## Which AI model should I use?
 
-The installer picks the best model for your machine automatically. If you want to switch later, open the chat, click the model name at the top, search for the model you want, and click Download.
+**Nous works with any model available on [ollama.com/library](https://ollama.com/library)** — there are hundreds. The installer shows your hardware specs and asks which model you want; you can type any model name from the Ollama library.
+
+To switch models later: open the chat, click the model name at the top, search for the one you want, and click Download. You can have multiple models installed at the same time and switch between them freely.
+
+The table below shows a few popular examples — these are just suggestions, not requirements.
 
 ### With a dedicated GPU (NVIDIA or AMD)
 
-| Your VRAM | Model to download | Size | What it's like |
-|-----------|------------------|------|----------------|
-| 8–10 GB | `gemma4:12b` *(default)* | ~5 GB | Great for everyday chat, writing, Q&A |
+| Your VRAM | Example model | Size | What it's like |
+|-----------|--------------|------|----------------|
+| 8–10 GB | `gemma4:12b` | ~5 GB | Great for everyday chat, writing, Q&A |
 | 12–16 GB | `qwen3:14b` | ~9 GB | Better reasoning, longer context |
 | 20 GB+ | `qwen3:32b` | ~20 GB | Near GPT-4 quality |
 
-> Not sure about your VRAM? Run `instalar.bat` — it shows your hardware before installing.
+> Not sure about your VRAM? The installer (`instalar.bat`) shows your hardware before asking.
 
 ### Without a dedicated GPU (CPU only)
 
-| Your RAM | Model to download | Size | What it's like |
-|----------|------------------|------|----------------|
-| 8–16 GB | `gemma4:e4b` *(auto-selected)* | ~3 GB | Fast on CPU, good for everyday use |
+| Your RAM | Example model | Size | What it's like |
+|----------|--------------|------|----------------|
+| 8–16 GB | `gemma4:e4b` | ~3 GB | Fast on CPU, good for everyday use |
 | 16–32 GB | `qwen3:8b` | ~5 GB | Better quality, slightly slower |
 | 32 GB+ | `gemma4:12b` | ~5 GB | Full quality, but slow (1–2 min/reply) |
+
+> Browse the full catalogue at **[ollama.com/library](https://ollama.com/library)**. Any model listed there works with Nous.
 
 ---
 
