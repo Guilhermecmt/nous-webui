@@ -1,7 +1,7 @@
 """
 title: Nous Memory
 author: Nous
-version: 0.1.0
+version: 0.2.0
 required_open_webui_version: 0.5.0
 description: Memoria pessoal persistente, 100% local. O Nous lembra de voce entre conversas.
 """
@@ -45,6 +45,13 @@ class Filter:
     class Valves(BaseModel):
         ENABLED: bool = Field(default=True, description="Liga/desliga a memoria.")
         EXTRACT: bool = Field(default=True, description="Extrair novos fatos automaticamente.")
+        CLOUD_MODELS_GET_MEMORY: bool = Field(
+            default=False,
+            description=(
+                "Injetar memoria em modelos de nuvem (ids com '/'). "
+                "Desativado por padrao: conversas em nuvem nao enviam dados pessoais para servidores externos."
+            ),
+        )
         OLLAMA_BASE: str = Field(default="http://127.0.0.1:11434")
         EXTRACT_MODEL: str = Field(
             default="gemma4:12b",
@@ -156,6 +163,11 @@ class Filter:
     # -------------------------------------------------------------------- hooks
     async def inlet(self, body: dict, __user__: Optional[dict] = None, __event_emitter__=None) -> dict:
         if not self.valves.ENABLED:
+            return body
+        # Modelos de nuvem tem id com '/' (ex.: "deepseek-ai/deepseek-r1").
+        # Por padrao nao injetamos dados pessoais em requisicoes externas.
+        model_id = body.get("model", "")
+        if "/" in model_id and not self.valves.CLOUD_MODELS_GET_MEMORY:
             return body
         user_id = (__user__ or {}).get("id") or "default"
         persona = _get_active_persona(user_id)

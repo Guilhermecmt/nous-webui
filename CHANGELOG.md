@@ -4,6 +4,31 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [2.1.0] - 2026-06-10
+### Adicionado
+- **Nous Nuvem (NVIDIA NIM)** — acesso *opt-in* a ~80 modelos de fronteira
+  gratuitos (DeepSeek R1, Llama 3.3 70B, Qwen3 Coder, MiniMax M1, Kimi K2...)
+  via API hospedada da NVIDIA (`integrate.api.nvidia.com/v1`), 100% compativel
+  com OpenAI. Sem GPU, sem cartao de credito, sem assinatura.
+  - `cloud/register_nvidia.py`: registra/remove a conexao NVIDIA direto no
+    `webui.db` a cada boot. Idempotente, sem credenciais de admin.
+    Curadoria de 5 modelos para nao poluir o dropdown.
+  - `cloud/ativar-nuvem.ps1` + `cloud/desativar-nuvem.ps1`: ativacao/desativacao
+    por dialog grafico (sem terminal). Valida a chave online antes de salvar.
+  - `ativar-nuvem.bat` + `desativar-nuvem.bat` na raiz: clique duplo e pronto.
+  - Chave armazenada em `NousData\.nvidia_api_key` (fora do git, mesmo padrao
+    da `.webui_secret_key`).
+### Mudado
+- **Memoria protegida em nuvem** (`memory/nous_memory.py` v0.2.0): o inlet
+  **nao injeta fatos pessoais** em modelos de nuvem (ids com `/`, ex.:
+  `deepseek-ai/deepseek-r1`). Nova valve `CLOUD_MODELS_GET_MEMORY` (padrao
+  `False`) para quem quiser ligar explicitamente.
+- `tools/health-check.ps1`: novo item informativo "Nuvem NVIDIA: ativa /
+  inativa" — nunca falha o health-check por causa da nuvem.
+- `launchers/start-nous.ps1`: chama `Register-Cloud` a cada boot junto com
+  `Register-Memory`, `Register-Pipe`, `Setup-Files`, `Setup-History` e
+  `Start-MemoryAPI`.
+
 ## [2.0.0] - 2026-06-08
 ### Adicionado
 - **Link "Criar conta" na tela de login** (`branding/nous-loader.js`): apos o
@@ -108,12 +133,12 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 - **Acesso aos seus arquivos locais — Fase 2** (`files/`): o Nous agora consulta
   automaticamente sua pasta de notas (Obsidian, `.md`, `.txt`) e injeta os trechos
   mais relevantes no contexto de cada conversa.
-  - `files/index_files.py` — indexador incremental: chunking por parágrafos/headings,
+  - `files/index_files.py` — indexador incremental: chunking por paragrafos/headings,
     embeddings via Ollama (`nomic-embed-text` com prefixo `search_document:`), tabela
     FTS5, mtime+hash para so' reindexa o que mudou. Modo watch (a cada 20 s).
     Singleton por porta (8991) para nao duplicar processo.
   - `files/nous_files.py` — Filter global do Open WebUI com busca **hibrida**:
-    semântica (cosine similarity via matriz de embeddings) + palavra-chave (FTS5/BM25),
+    semantica (cosine similarity via matriz de embeddings) + palavra-chave (FTS5/BM25),
     fundidas por Reciprocal Rank Fusion. Limiar `MIN_SIM=0.65` bloqueia ruido
     (`search_query:` no embedding da consulta). Status: *"Nous consultou seus
     arquivos: arquivo.md"*. Stopwords PT/EN para eliminar tokens triviais do FTS.

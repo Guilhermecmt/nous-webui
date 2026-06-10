@@ -9,7 +9,7 @@
 Chat · Vision · Local image generation · Web search — 100% on your PC.  
 No cloud. No API keys. Nothing ever leaves your machine.
 
-[![version](https://img.shields.io/badge/version-2.0.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-2.1.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requirements)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20private-2ea44f)](#why-nous)
@@ -190,6 +190,24 @@ As you chat, Nous quietly learns durable facts about you — your name, where yo
 Point Nous at a folder (your Obsidian vault, a `Documents\Nous` folder, anything with `.md`/`.txt` files) and it searches your notes before every reply, injecting the most relevant passages into the conversation.
 
 On first launch, Nous creates `Documents\Nous` automatically. Drop notes there and Nous will use them. To point it at your Obsidian vault, open the **Nous Files** filter settings in the Open WebUI admin panel and set the `FOLDER` valve.
+
+---
+
+## Nous Cloud — optional frontier models (NVIDIA NIM)
+
+Nous is private by default. But if you want access to state-of-the-art frontier models (DeepSeek R1, Llama 3.3 70B, Qwen3 Coder, MiniMax M1, Kimi K2…), you can optionally connect to NVIDIA's free hosted inference API — **no GPU required, no credit card, no subscription**.
+
+> ⚠️ **Privacy notice:** conversations with cloud models are sent to NVIDIA's servers for processing. Your **personal memory is never sent** — Nous automatically protects it for cloud model requests.
+
+### How to activate
+
+1. Get a free API key at [build.nvidia.com/models](https://build.nvidia.com/models) — sign up for the NVIDIA Developer Program (free).
+2. Double-click **`ativar-nuvem.bat`** in the Nous folder, paste your key and click OK.
+3. Restart Nous — the curated cloud models appear in the model dropdown.
+
+To deactivate: double-click **`desativar-nuvem.bat`** and restart Nous. No traces remain.
+
+**Free tier:** ~1,000 inference credits on signup (up to 5,000 for corporate email), 40 requests/minute. Designed for personal use — exactly Nous's use case.
 
 ---
 

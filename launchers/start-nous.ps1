@@ -174,8 +174,19 @@ function Start-MemoryAPI {
     }
 }
 
+# --- Nuvem NVIDIA NIM (v2.1): conexao opt-in registrada/removida a cada boot ---
+
+# Garante a conexao NVIDIA NIM no banco (se a chave existir) ou a remove.
+# Idempotente: ativa quando NousData\.nvidia_api_key presente, desativa se ausente.
+function Register-Cloud {
+    $reg = Join-Path $PSScriptRoot "..\cloud\register_nvidia.py"
+    if ((Test-Path $py) -and (Test-Path $reg)) {
+        & $py "$reg" --data-dir "$env:DATA_DIR" | Out-Null
+    }
+}
+
 # Ja esta rodando? Garante funcoes nativas e abre o navegador.
-if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; return }
+if (Test-Up) { Register-Memory; Register-Pipe; Register-Cloud; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -198,5 +209,5 @@ if ((Test-Path $py) -and (Test-Path $monitor)) {
 # Espera ficar pronto, garante funcoes nativas e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Register-Memory; Register-Pipe; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; break }
+    if (Test-Up) { Register-Memory; Register-Pipe; Register-Cloud; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; break }
 }

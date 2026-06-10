@@ -61,6 +61,28 @@ try { $srv = (Invoke-WebRequest "http://localhost:8080/health" -TimeoutSec 3 -Us
 if ($srv) { Write-Host "  [OK]    Servidor Nous respondendo (8080)" -ForegroundColor Green }
 else      { Note "Servidor Nous" "parado (normal se voce ainda nao iniciou)" }
 
+# Nuvem NVIDIA (informativo — nunca falha o health-check)
+$nvKeyFile = Join-Path $dataDir ".nvidia_api_key"
+if (Test-Path $nvKeyFile) {
+    $nvKey = (Get-Content $nvKeyFile -Raw -ErrorAction SilentlyContinue).Trim()
+    if ($nvKey) {
+        $nvOk = $false
+        try {
+            $nvResp = Invoke-WebRequest `
+                -Uri "https://integrate.api.nvidia.com/v1/models" `
+                -Headers @{ Authorization = "Bearer $nvKey" } `
+                -TimeoutSec 8 -UseBasicParsing -ErrorAction Stop
+            $nvOk = $nvResp.StatusCode -eq 200
+        } catch {}
+        if ($nvOk) { Note "Nuvem NVIDIA" "ativa e alcancavel" }
+        else        { Note "Nuvem NVIDIA" "chave presente mas API nao respondeu (sem internet?)" }
+    } else {
+        Note "Nuvem NVIDIA" "inativa (arquivo de chave vazio)"
+    }
+} else {
+    Note "Nuvem NVIDIA" "inativa (use ativar-nuvem.bat para ativar)"
+}
+
 Write-Host ""
 if ($script:fail -eq 0) { Write-Host "TUDO CERTO - instalacao integra." -ForegroundColor Green; exit 0 }
 else { Write-Host "$($script:fail) problema(s) encontrado(s)." -ForegroundColor Red; exit 1 }

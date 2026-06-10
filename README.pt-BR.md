@@ -9,7 +9,7 @@
 Chat · Visão · Geração de imagem local · Busca na web — 100% no seu PC.  
 Sem nuvem. Sem chaves de API. Nada sai da sua máquina.
 
-[![version](https://img.shields.io/badge/version-2.0.0-c8962e)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-2.1.0-c8962e)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)](#requisitos)
 [![local](https://img.shields.io/badge/100%25-local%20%26%20privado-2ea44f)](#por-que-o-nous)
@@ -189,6 +189,24 @@ Conforme você conversa, o Nous aprende fatos duráveis sobre você — nome, ci
 Aponte o Nous para uma pasta (seu vault do Obsidian, `Documentos\Nous`, qualquer coisa com `.md`/`.txt`) e ele buscará nas suas notas antes de cada resposta, injetando os trechos relevantes na conversa.
 
 No primeiro boot, o Nous cria `Documentos\Nous` automaticamente. Coloque notas lá e o Nous vai usá-las. Para apontar para o seu vault do Obsidian, abra as configurações do filtro **Nous Files** no painel de admin e altere o valve `FOLDER`.
+
+---
+
+## Nous Nuvem — modelos de fronteira opcionais (NVIDIA NIM)
+
+O Nous é privado por padrão. Mas se você quiser acesso a modelos de ponta (DeepSeek R1, Llama 3.3 70B, Qwen3 Coder, MiniMax M1, Kimi K2…), pode conectar opcionalmente à API de inferência gratuita da NVIDIA — **sem GPU, sem cartão de crédito, sem assinatura**.
+
+> ⚠️ **Aviso de privacidade:** conversas com modelos de nuvem são enviadas para os servidores da NVIDIA para processamento. Sua **memória pessoal nunca é enviada** — o Nous a protege automaticamente nas requisições de nuvem.
+
+### Como ativar
+
+1. Obtenha uma chave de API gratuita em [build.nvidia.com/models](https://build.nvidia.com/models) — cadastre-se no NVIDIA Developer Program (gratuito).
+2. Dê clique duplo em **`ativar-nuvem.bat`** na pasta do Nous, cole sua chave e clique em OK.
+3. Reinicie o Nous — os modelos de nuvem curados aparecem no dropdown de modelos.
+
+Para desativar: clique duplo em **`desativar-nuvem.bat`** e reinicie o Nous. Nenhum rastro permanece.
+
+**Free tier:** ~1.000 créditos de inferência no cadastro (até 5.000 com e-mail corporativo), 40 requisições/minuto. Projetado para uso pessoal — exatamente o caso de uso do Nous.
 
 ---
 

@@ -34,6 +34,12 @@ sem conhecimento tecnico, com tudo acontecendo em segundo plano.
   servidor respondendo, GPU em uso. Em caso de falha, mensagem acionavel
   (ex.: "GPU nao detectada — rodando na CPU", "modelo nao baixado", etc.).
 
+## v1.6 — Nous Nuvem (feito)
+- Acesso *opt-in* a modelos de fronteira via NVIDIA NIM API (gratuito, sem GPU).
+- `cloud/register_nvidia.py` — registro idempotente no banco a cada boot.
+- `ativar-nuvem.bat` / `desativar-nuvem.bat` — ativacao por clique duplo, sem terminal.
+- Memoria pessoal protegida: nao injetada em modelos de nuvem por padrao.
+
 ## v1.4 — Bandeja do sistema (System Tray)
 - Icone na bandeja: Iniciar/Parar, abrir, status (rodando/parado, GPU/CPU),
   uso de memoria — substitui qualquer necessidade de terminal.
