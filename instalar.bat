@@ -1,6 +1,8 @@
 @echo off
 REM ============================================================
 REM  Nous - Instalador (clique duplo). Funciona de qualquer pasta.
+REM  Sem perguntas tecnicas: o modelo de IA e' escolhido DENTRO
+REM  do Nous, num assistente visual, no primeiro uso.
 REM ============================================================
 title Instalador do Nous
 cd /d "%~dp0"
@@ -14,6 +16,10 @@ echo   - Ollama (motor dos modelos de IA)
 echo   - Python + Open WebUI (a interface)
 echo   - a identidade Nous (tema, logo, memoria)
 echo.
+echo O modelo de IA voce escolhe DEPOIS, dentro do
+echo proprio Nous - com recomendacao automatica para
+echo a sua maquina e download em 1 clique.
+echo.
 echo Pode levar varios minutos e baixar alguns GB.
 echo Se aparecer um aviso do Windows, escolha "Sim".
 echo.
@@ -25,7 +31,7 @@ if not "%~1"=="" (
     goto fim
 )
 
-REM ---- Analisa o hardware ----
+REM ---- Analisa o hardware (porteiro de capacidade) ----
 echo.
 echo Analisando sua maquina...
 echo.
@@ -43,32 +49,15 @@ if %CHECK_EXIT%==1 (
 )
 
 echo.
-echo ============================================
-echo  Qual modelo voce quer instalar?
-echo ============================================
-echo.
-echo  Veja as recomendacoes acima de acordo com sua maquina.
-echo  Voce pode usar QUALQUER modelo disponivel no Ollama
-echo  (https://ollama.com/library) - nao so' os listados acima.
-echo.
-echo  Exemplos populares:
-echo    gemma4:12b   llama3.2    mistral    phi4    deepseek-r1
-echo.
-set /p NOUS_MODEL="Digite o nome do modelo (ou pressione ENTER para gemma4:12b): "
-if "%NOUS_MODEL%"=="" set "NOUS_MODEL=gemma4:12b"
-
-echo.
-echo Modelo escolhido: %NOUS_MODEL%
-echo.
-pause
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\install-nous.ps1" -WithModel -Model "%NOUS_MODEL%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\install-nous.ps1"
 
 :fim
 echo.
 echo ============================================
-echo  Terminou. Abra o Nous pelo atalho "Nous"
-echo  criado na area de trabalho.
+echo  Pronto! Abrindo o Nous para voce...
+echo  (na primeira vez, ele te ajuda a escolher
+echo   e baixar o modelo de IA ideal)
 echo ============================================
 echo.
+start "" wscript.exe "%~dp0launchers\nous-hidden.vbs"
 pause

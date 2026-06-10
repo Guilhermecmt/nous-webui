@@ -4,6 +4,45 @@ Todas as mudancas notaveis do Nous. Formato baseado em
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [2.2.0] - 2026-06-10
+### Adicionado
+- **Loja de Modelos dentro do app** — o usuario escolhe e baixa o modelo de IA
+  sem sair do site, sem terminal e sem ingles:
+  - `monitor/catalog.json`: catalogo curado (~17 modelos do Ollama) com nome
+    amigavel, descricao em PT-BR, tamanho de download e requisitos reais.
+  - `monitor/nous_monitor.py`: novas rotas `GET /hardware` (GPU/VRAM/RAM +
+    tier da maquina), `GET /catalog` (catalogo ordenado: **recomendados para
+    esta maquina primeiro**, com `installed`/`fit`/progresso), `POST /pull`
+    (download via Ollama em background, singleton por modelo) e
+    `GET /pull/status` (progresso real agregado por digest).
+  - `branding/nous-loader.js`: painel **"Baixar modelos"** no card Recursos —
+    cards com selos "Recomendado para sua maquina" / "Roda na sua maquina" /
+    "Pesado para sua maquina" / "Entende imagens", download em 1 clique com
+    barra de progresso (pode fechar e reabrir: o estado vive no monitor).
+- **Assistente de primeiro uso** — se nao ha nenhum modelo de chat instalado,
+  o Nous abre uma tela de boas-vindas com o modelo recomendado para a maquina
+  e um unico botao "Baixar e comecar". Some sozinho apos o primeiro download.
+- **Atalho garantido**: o instalador agora cria o atalho tambem no **Menu
+  Iniciar** (imune ao "Acesso controlado a pastas" do Defender), cria o da
+  area de trabalho logo no inicio da instalacao (sobrevive a falhas no meio),
+  verifica o resultado e tem fallback para a area de trabalho publica em
+  instalacoes elevadas. `health-check.ps1` passa a conferir o atalho.
+- **Identidade com auto-cura**: `apply_branding.py` grava um marcador
+  (versao do open-webui + hash dos arquivos Nous) em
+  `NousData\.branding_marker.json`; o novo modo `--if-needed` reaplica a
+  identidade so quando algo mudou. `start-nous.ps1` chama `Ensure-Branding`
+  a cada boot — logo/tema perdidos em upgrade se corrigem sozinhos.
+### Mudado
+- `instalar.bat` **nao pergunta mais o modelo no terminal** — era o maior
+  ponto de friccao para leigos. O nucleo instala sem modelo e o assistente
+  de primeiro uso cuida do resto; no final, o instalador abre o Nous sozinho.
+- `installer/install-nous.ps1`: versao do Open WebUI **pinada**
+  (`open-webui==0.9.6`, testada com o Nous) para novas instalacoes nao
+  quebrarem com mudancas upstream; garante o Pillow antes do branding e
+  avisa (sem abortar) se a identidade falhar.
+- `tools/health-check.ps1`: confere tambem `favicon.png`, o marcador de
+  auto-cura e o atalho (area de trabalho ou Menu Iniciar).
+
 ## [2.1.0] - 2026-06-10
 ### Adicionado
 - **Nous Nuvem (NVIDIA NIM)** — acesso *opt-in* a ~80 modelos de fronteira

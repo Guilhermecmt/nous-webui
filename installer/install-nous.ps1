@@ -32,6 +32,13 @@ $venv      = Join-Path $env:USERPROFILE "open-webui"
 $dataDir   = Join-Path $env:USERPROFILE "NousData"
 $ollamaExe = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
 $ollamaApp = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama app.exe"
+$nousExe   = Join-Path $REPO "launchers\Nous.exe"
+
+# Versao do Open WebUI TESTADA com o Nous. Upgrades sao conscientes: valide a
+# versao nova primeiro e depois suba este pin (a identidade Nous se reaplica
+# sozinha no boot via marcador). Sem o pin, um "pip install" futuro pode trazer
+# uma versao que quebra o patch do nome/tema em maquinas de usuarios leigos.
+$OPENWEBUI_PIN = "0.9.6"
 
 function Step($n, $t) { Write-Host "`n[$n] $t" -ForegroundColor Cyan }
 function Ok($t)       { Write-Host "    [ok] $t" -ForegroundColor Green }
@@ -54,6 +61,34 @@ function Test-OllamaUp {
     try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null; return $true }
     catch { return $false }
 }
+# Cria/atualiza o atalho "Nous.lnk" em $folder. Aponta p/ Nous.exe se existir,
+# senao p/ wscript + nous-hidden.vbs (mesmo efeito, sem janela). NUNCA lanca
+# excecao: antivirus / "Acesso controlado a pastas" do Defender podem bloquear
+# a gravacao na area de trabalho — tratamos e seguimos. Retorna $true se o
+# atalho existe ao final.
+function New-NousShortcut([string]$folder) {
+    try {
+        if (-not $folder) { return $false }
+        if (-not (Test-Path $folder)) { return $false }
+        $lnkPath = Join-Path $folder "Nous.lnk"
+        $ws  = New-Object -ComObject WScript.Shell
+        $lnk = $ws.CreateShortcut($lnkPath)
+        if (Test-Path $nousExe) {
+            $lnk.TargetPath = $nousExe
+            $lnk.WorkingDirectory = (Split-Path $nousExe)
+        } else {
+            $vbs = Join-Path $REPO "launchers\nous-hidden.vbs"
+            $lnk.TargetPath = "wscript.exe"
+            $lnk.Arguments  = "`"$vbs`""
+            $lnk.WorkingDirectory = (Join-Path $REPO "launchers")
+        }
+        $ico = Join-Path $REPO "branding\assets\nous.ico"
+        if (Test-Path $ico) { $lnk.IconLocation = "$ico,0" }
+        $lnk.Save()
+        return [bool](Test-Path $lnkPath)
+    } catch { return $false }
+}
+
 function Find-Py311 {
     # Open WebUI exige Python 3.11 (nao 3.12+). Procura qualquer 3.11 ja' presente.
     try {
@@ -88,6 +123,13 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# 0.7) Atalho ANTES de tudo --------------------------------------------------
+# Se algo falhar no meio da instalacao, o usuario ja' tem como abrir o Nous.
+# O Menu Iniciar nao e' bloqueado pelo "Acesso controlado a pastas" do Defender,
+# entao "Nous" sempre aparece ao apertar a tecla Windows e digitar o nome.
+$null = New-NousShortcut ([Environment]::GetFolderPath("Desktop"))
+$null = New-NousShortcut ([Environment]::GetFolderPath("Programs"))
+
 # 1) Ollama -----------------------------------------------------------------
 Step 1 "Ollama"
 $instOllama = $false   # o Nous instalou? (para o desinstalador saber)
@@ -119,8 +161,8 @@ if ($WithModel) {
 }
 elseif ($hasModel) { Ok "$Model ja presente" }
 else {
-    Info "pulado de proposito: o modelo e baixado DENTRO do Nous, com barra de"
-    Info "progresso na tela (Admin > Settings > Models). Recomendado: $Model."
+    Info "pulado de proposito: no primeiro uso o Nous abre um assistente que"
+    Info "recomenda o modelo ideal p/ esta maquina e baixa em 1 clique (Loja de Modelos)."
 }
 
 # 3) Python 3.11 ------------------------------------------------------------
@@ -143,15 +185,19 @@ $vpy = Join-Path $venv "Scripts\python.exe"
 if (-not (Test-Path $vpy)) { Info "criando ambiente isolado..."; & $py311 -m venv $venv }
 if ((Test-Path (Join-Path $venv "Scripts\open-webui.exe")) -and -not $Force) { Ok "Open WebUI ja instalado" }
 else {
-    Info "instalando o Open WebUI (varios minutos, baixa varios GB)..."
+    Info "instalando o Open WebUI $OPENWEBUI_PIN (varios minutos, baixa varios GB)..."
     & $vpy -m pip install --upgrade pip --quiet
-    & $vpy -m pip install open-webui
-    Ok "instalado"
+    & $vpy -m pip install "open-webui==$OPENWEBUI_PIN"
+    Ok "instalado (versao testada com o Nous)"
 }
 
 # 5) Identidade Nous --------------------------------------------------------
 Step 5 "Aplicando a identidade Nous"
-& $vpy (Join-Path $REPO "branding\apply_branding.py")
+& $vpy -m pip install pillow --quiet | Out-Null   # garante o PIL (no-op se ja existe)
+& $vpy (Join-Path $REPO "branding\apply_branding.py") --data-dir $dataDir
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "    [aviso] identidade nao aplicada agora - o Nous reaplica sozinho a cada inicio." -ForegroundColor Yellow
+}
 
 # 6) Dados + atalho + launcher oculto --------------------------------------
 Step 6 "Dados, atalho e launcher"
@@ -159,29 +205,24 @@ New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 Ok "pasta de dados: $dataDir"
 # (opcional) gera os .exe bonitos via ps2exe; se faltar o modulo, seguimos
 # com o atalho via .vbs (funciona igual, sem janela de console).
-$nousExe = Join-Path $REPO "launchers\Nous.exe"
 try { & (Join-Path $REPO "launchers\build-exe.ps1") | Out-Null; Ok "launchers .exe gerados" }
 catch { Info "sem ps2exe: vou usar o atalho via .vbs (abre igual, sem janela)" }
 
-# Cria SEMPRE um atalho funcional na area de trabalho:
-#  - se Nous.exe existe, aponta p/ ele;
-#  - senao, aponta p/ wscript + nous-hidden.vbs (inicia o .ps1 escondido).
-$desktop = [Environment]::GetFolderPath("Desktop")
-$ico = Join-Path $REPO "branding\assets\nous.ico"
-$ws  = New-Object -ComObject WScript.Shell
-$lnk = $ws.CreateShortcut((Join-Path $desktop "Nous.lnk"))
-if (Test-Path $nousExe) {
-    $lnk.TargetPath = $nousExe
-    $lnk.WorkingDirectory = (Split-Path $nousExe)
-} else {
-    $vbs = Join-Path $REPO "launchers\nous-hidden.vbs"
-    $lnk.TargetPath = "wscript.exe"
-    $lnk.Arguments  = "`"$vbs`""
-    $lnk.WorkingDirectory = (Join-Path $REPO "launchers")
+# Recria os atalhos (agora apontando p/ Nous.exe, se foi gerado) e VERIFICA.
+$desktopOk = New-NousShortcut ([Environment]::GetFolderPath("Desktop"))
+if (-not $desktopOk) {
+    # instalacao elevada (outra conta) ou Desktop bloqueado: area de trabalho publica
+    $desktopOk = New-NousShortcut ([Environment]::GetFolderPath("CommonDesktopDirectory"))
 }
-if (Test-Path $ico) { $lnk.IconLocation = "$ico,0" }
-$lnk.Save()
-Ok "atalho 'Nous' criado na area de trabalho"
+$startOk = New-NousShortcut ([Environment]::GetFolderPath("Programs"))
+if ($desktopOk) { Ok "atalho 'Nous' na area de trabalho" }
+if ($startOk)   { Ok "atalho 'Nous' no Menu Iniciar (tecla Windows > digite Nous)" }
+if (-not $desktopOk) {
+    Write-Host "    [aviso] nao consegui criar o atalho na area de trabalho" -ForegroundColor Yellow
+    Write-Host "            (o antivirus ou o 'Acesso controlado a pastas' pode ter bloqueado)." -ForegroundColor Yellow
+    if ($startOk) { Write-Host "            Use o Menu Iniciar (tecla Windows > Nous) ou o iniciar.bat." -ForegroundColor Yellow }
+    else          { Write-Host "            Abra o Nous com clique duplo em iniciar.bat, na pasta do Nous." -ForegroundColor Yellow }
+}
 
 # 6.5) Manifesto de instalacao ---------------------------------------------
 # Registra o que o Nous REALMENTE instalou, para o desinstalador remover so'
@@ -223,8 +264,8 @@ Write-Host "`n==========================================================" -Foreg
 Write-Host " Nous pronto!" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host " 1. Abra pelo atalho 'Nous' na area de trabalho." -ForegroundColor White
-Write-Host "    (ou clique duplo em iniciar.bat se o atalho nao aparecer)" -ForegroundColor DarkGray
+Write-Host " 1. Abra pelo atalho 'Nous' na area de trabalho" -ForegroundColor White
+Write-Host "    (ou tecla Windows > digite Nous; ou clique duplo em iniciar.bat)." -ForegroundColor DarkGray
 Write-Host ""
 Write-Host " 2. Crie sua conta - a primeira conta e' a administradora." -ForegroundColor White
 Write-Host "    Nao precisa de email real; use qualquer nome e senha." -ForegroundColor DarkGray
@@ -233,8 +274,8 @@ if ($WithModel) {
     Write-Host " 3. O modelo $Model ja foi baixado. Ele aparece no seletor" -ForegroundColor White
     Write-Host "    de modelos no topo da tela. Clique nele e comece a conversar." -ForegroundColor DarkGray
 } else {
-    Write-Host " 3. Dentro do Nous: clique em Admin Panel > Settings > Models," -ForegroundColor White
-    Write-Host "    digite '$Model' e clique em Download." -ForegroundColor DarkGray
+    Write-Host " 3. O Nous abre um assistente no primeiro uso: ele recomenda o" -ForegroundColor White
+    Write-Host "    modelo ideal para a sua maquina e baixa tudo em 1 clique." -ForegroundColor DarkGray
 }
 Write-Host ""
 Write-Host " Dica: chat, visao (envie prints), busca na web e memoria pessoal" -ForegroundColor DarkGray

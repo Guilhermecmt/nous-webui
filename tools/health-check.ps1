@@ -45,10 +45,29 @@ Check "Servico Ollama no ar" $apiUp "API 11434 nao responde"
 $hasModel = $false
 if (Test-Path $ollamaExe) { $hasModel = [bool]((& $ollamaExe list 2>$null) -match [regex]::Escape($Model)) }
 if ($hasModel) { Check "Modelo $Model presente" $true "" }
-else { Note "Modelo" "nenhum baixado ainda - baixe dentro do Nous (Settings > Models)" }
+else { Note "Modelo" "nenhum baixado ainda - o Nous oferece o download no primeiro uso (Loja de Modelos)" }
 
 Check "Open WebUI instalado" (Test-Path (Join-Path $venv "Scripts\open-webui.exe")) "ambiente/open-webui ausente"
-Check "Identidade Nous aplicada" (Test-Path (Join-Path $owDir "static\custom.css")) "rode branding\apply_branding.py"
+
+# Identidade: tema + logo nas pastas static + marcador de auto-cura
+$brandOk = (Test-Path (Join-Path $owDir "static\custom.css")) -and
+           (Test-Path (Join-Path $owDir "static\favicon.png"))
+Check "Identidade Nous aplicada" $brandOk "rode branding\apply_branding.py"
+if (Test-Path (Join-Path $dataDir ".branding_marker.json")) {
+    Check "Auto-cura da identidade (marcador)" $true ""
+} else {
+    Note "Identidade (marcador)" "sera gravado no proximo inicio do Nous"
+}
+
+# Atalho: area de trabalho OU Menu Iniciar (o launcher cria nos dois)
+$lnkDesk  = Join-Path ([Environment]::GetFolderPath("Desktop"))  "Nous.lnk"
+$lnkCommon= Join-Path ([Environment]::GetFolderPath("CommonDesktopDirectory")) "Nous.lnk"
+$lnkStart = Join-Path ([Environment]::GetFolderPath("Programs")) "Nous.lnk"
+if ((Test-Path $lnkDesk) -or (Test-Path $lnkCommon) -or (Test-Path $lnkStart)) {
+    Check "Atalho 'Nous' presente" $true ""
+} else {
+    Note "Atalho 'Nous'" "nao encontrado - use iniciar.bat ou rode instalar.bat de novo"
+}
 
 if (Test-Path (Join-Path $dataDir "webui.db")) {
     Check "Dados em local seguro (DATA_DIR)" $true ""

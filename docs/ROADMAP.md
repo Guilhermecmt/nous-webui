@@ -3,48 +3,55 @@
 Objetivo maior: transformar o Nous em um **programa que qualquer pessoa baixa e usa**,
 sem conhecimento tecnico, com tudo acontecendo em segundo plano.
 
-## v1.0 — Fundacao (feito)
+## Feito
+
+### v1.0 — Fundacao
 - Identidade visual (logo, favicons, tema Branco & Ouro), nome "Nous".
 - Persistencia dos dados fora do `site-packages` (`DATA_DIR`).
 - Execucao em segundo plano (sem janela de terminal).
 - Ferramentas: analise de capacidade, backup, reset de senha.
 - Repositorio versionado (Git + SemVer + CHANGELOG).
 
-## v1.1 — Instalador de 1 clique
-- **Bootstrapper unico** (`install-nous`) que faz tudo sem interacao tecnica:
-  1. **Porteiro de capacidade** — roda `check-system.ps1`; se **INCAPAZ**, mostra
-     um erro claro (RAM/VRAM/disco) e aborta antes de baixar qualquer coisa.
-  2. Instala o **Ollama** silenciosamente (winget/instalador, sem janelas).
-  3. O **modelo** NAO e baixado na instalacao — fica para **dentro do app**
-     (Open WebUI: Admin > Settings > Models), com progresso nativo na tela.
-     Mantem o setup leve (~5-6 GB) e deixa o usuario escolher o modelo.
-  4. Cria o ambiente **Python 3.11** + instala o **Open WebUI**.
-  5. Aplica a **identidade Nous** (`apply_branding.py`).
-  6. Cria atalhos (Iniciar/Parar Nous) e configura inicio automatico opcional.
-- Tudo **oculto/segundo plano**; UI de progresso propria (nada de prompt cru).
+### v1.1 — Instalador de 1 clique
+- Bootstrapper unico (`install-nous`) com porteiro de capacidade (aborta se
+  INCAPAZ), instalacao silenciosa de Ollama + Python + Open WebUI, identidade
+  aplicada e atalhos criados. Idempotente.
 
-## v1.2 — Assistente de primeira execucao (First-Run Wizard)
-- Tela de boas-vindas nativa no primeiro uso da maquina:
-  - passo a passo visual (instalar / baixar modelo / pronto);
-  - deteccao automatica do que ja existe (idempotente);
-  - criacao da conta admin local.
+### v1.2 — Setup leve
+- O modelo NAO e baixado na instalacao — fica para dentro do app, mantendo o
+  setup pequeno e a escolha com o usuario.
 
-## v1.3 — Verificacao inteligente pos-instalacao (Health Check)
-- Servico que confirma que **tudo** subiu certo: Ollama no ar, modelo presente,
-  servidor respondendo, GPU em uso. Em caso de falha, mensagem acionavel
-  (ex.: "GPU nao detectada — rodando na CPU", "modelo nao baixado", etc.).
+### v1.3 — Health check
+- Verificacao pos-instalacao: Ollama no ar, ambiente, identidade, servidor,
+  atalho. Mensagens acionaveis.
 
-## v1.6 — Nous Nuvem (feito)
+### v1.4–v2.0 — Produto completo
+- Visao, geracao de imagem local (ComfyUI + Flux), painel de recursos (VRAM),
+  memoria pessoal persistente, RAG de arquivos locais (Obsidian/notas), RAG de
+  historico, painel "O que o Nous sabe" + personas, link criar conta, badges
+  de capacidade VRAM por modelo, citacoes de fonte.
+
+### v2.1 — Nous Nuvem
 - Acesso *opt-in* a modelos de fronteira via NVIDIA NIM API (gratuito, sem GPU).
-- `cloud/register_nvidia.py` — registro idempotente no banco a cada boot.
-- `ativar-nuvem.bat` / `desativar-nuvem.bat` — ativacao por clique duplo, sem terminal.
-- Memoria pessoal protegida: nao injetada em modelos de nuvem por padrao.
+- Ativacao/desativacao por clique duplo; memoria pessoal protegida (nao vai
+  para a nuvem por padrao).
 
-## v1.4 — Bandeja do sistema (System Tray)
+### v2.2 — Loja de Modelos + primeiro uso guiado
+- Loja de Modelos dentro do site: catalogo curado com recomendacao automatica
+  para o hardware da maquina, download em 1 clique com progresso real.
+- Assistente de primeiro uso: boas-vindas + modelo recomendado + um botao.
+- Instalador sem NENHUMA pergunta tecnica; abre o Nous sozinho ao final.
+- Atalho garantido (area de trabalho + Menu Iniciar, com verificacao).
+- Identidade com auto-cura no boot (marcador versao+hash).
+- Versao do Open WebUI pinada (testada) em novas instalacoes.
+
+## Proximo
+
+### Bandeja do sistema (System Tray)
 - Icone na bandeja: Iniciar/Parar, abrir, status (rodando/parado, GPU/CPU),
   uso de memoria — substitui qualquer necessidade de terminal.
 
-## v2.0 — Distribuicao
+### Distribuicao
 - Instalador assinado (.exe/MSI) para reduzir alerta do SmartScreen.
 - Auto-update do Nous e do modelo.
 

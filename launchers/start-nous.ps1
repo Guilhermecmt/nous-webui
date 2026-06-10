@@ -66,6 +66,17 @@ function Test-Up {
     catch { return $false }
 }
 
+# Garante a identidade Nous (logo, tema, loader.js) no pacote open_webui.
+# Auto-cura: o marcador em NousData guarda versao do open-webui + hash dos
+# arquivos Nous; se um upgrade/reinstalacao apagou o tema, reaplica sozinho.
+# Com o marcador valido, sai em milissegundos (sem PIL, sem reescrever nada).
+function Ensure-Branding {
+    $brand = Join-Path $PSScriptRoot "..\branding\apply_branding.py"
+    if ((Test-Path $py) -and (Test-Path $brand)) {
+        & $py "$brand" --if-needed --data-dir "$env:DATA_DIR" | Out-Null
+    }
+}
+
 # Garante a memoria nativa (Filter global e ativo) registrada no banco.
 # Idempotente, sem login: re-sincroniza nous_memory.py a cada inicio.
 function Register-Memory {
@@ -186,7 +197,7 @@ function Register-Cloud {
 }
 
 # Ja esta rodando? Garante funcoes nativas e abre o navegador.
-if (Test-Up) { Register-Memory; Register-Pipe; Register-Cloud; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; return }
+if (Test-Up) { Ensure-Branding; Register-Memory; Register-Pipe; Register-Cloud; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; return }
 
 # Garante o Ollama (em segundo plano)
 try { Invoke-RestMethod "http://127.0.0.1:11434/api/version" -TimeoutSec 3 | Out-Null }
@@ -195,6 +206,9 @@ catch {
     if (Test-Path $ollama) { Start-Process $ollama -WindowStyle Hidden }
     Start-Sleep -Seconds 4
 }
+
+# Garante a identidade ANTES do servidor subir (1a requisicao ja sai com logo)
+Ensure-Branding
 
 # Sobe o servidor OCULTO (sem janela) e desanexa
 Start-Process -FilePath $exe -ArgumentList "serve" -WindowStyle Hidden
@@ -209,5 +223,5 @@ if ((Test-Path $py) -and (Test-Path $monitor)) {
 # Espera ficar pronto, garante funcoes nativas e abre o navegador
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 2
-    if (Test-Up) { Register-Memory; Register-Pipe; Register-Cloud; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; break }
+    if (Test-Up) { Ensure-Branding; Register-Memory; Register-Pipe; Register-Cloud; Setup-Files; Setup-History; Start-MemoryAPI; Start-Process $url; break }
 }

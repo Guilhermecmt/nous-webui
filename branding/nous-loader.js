@@ -133,7 +133,11 @@
 			'#nous-mon-stop{width:100%;margin-top:4px;padding:6px;border:0;border-radius:8px;cursor:pointer;' +
 			'background:rgba(200,150,46,.18);color:#e7c069;font-weight:600;font-size:12px;transition:background .15s}' +
 			'#nous-mon-stop:hover:not(:disabled){background:rgba(200,150,46,.32)}' +
-			'#nous-mon-stop:disabled{opacity:.4;cursor:default}';
+			'#nous-mon-stop:disabled{opacity:.4;cursor:default}' +
+			'#nous-store-open{width:100%;margin-top:5px;padding:6px;border:1px solid rgba(200,150,46,.4);' +
+			'border-radius:8px;cursor:pointer;background:transparent;color:#e7c069;' +
+			'font-weight:600;font-size:12px;transition:background .15s}' +
+			'#nous-store-open:hover{background:rgba(200,150,46,.18)}';
 		var st = document.createElement('style');
 		st.id = 'nous-monitor-style';
 		st.textContent = css;
@@ -154,7 +158,8 @@
 			'<div class="nous-mon-row"><span>Compartilhada</span><span class="nous-mon-val" data-k="shr">—</span></div>' +
 			'<div class="nous-mon-track"><div class="nous-mon-fill nous-mon-fill2" data-k="shr"></div></div>' +
 			'<div id="nous-mon-models"></div>' +
-			'<button id="nous-mon-stop" type="button" disabled>Parar modelos</button></div>';
+			'<button id="nous-mon-stop" type="button" disabled>Parar modelos</button>' +
+			'<button id="nous-store-open" type="button">Baixar modelos</button></div>';
 		document.body.appendChild(monEl);
 		monModels = monEl.querySelector('#nous-mon-models');
 		monBtn = monEl.querySelector('#nous-mon-stop');
@@ -175,6 +180,7 @@
 				.catch(function () {})
 				.then(function () { setTimeout(refreshMonitor, 700); });
 		});
+		monEl.querySelector('#nous-store-open').addEventListener('click', openStore);
 		monEl.classList.toggle('nous-collapsed', monCollapsed);
 	}
 
@@ -633,6 +639,351 @@
 		return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	}
 
+	/* ====================== Loja de Modelos (v2.2) ======================
+	 * Painel com o catalogo curado servido pelo monitor (8990/catalog):
+	 * recomendados para ESTA maquina primeiro, download em 1 clique com
+	 * progresso real. O estado do download vive no monitor — pode fechar
+	 * e reabrir o painel sem perder nada.
+	 * ==================================================================== */
+	var storeEl = null, storeOpen = false, storeTimer = null;
+	var CAT_LABEL = {
+		leve: 'Leve e rapido', conversa: 'Conversa e escrita',
+		raciocinio: 'Raciocinio', programacao: 'Programacao'
+	};
+
+	function injectStoreStyle() {
+		if (document.getElementById('nous-store-style')) return;
+		var css =
+			'#nous-store-ov{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);' +
+			'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}' +
+			'#nous-store-ov.nous-hidden{display:none}' +
+			'#nous-store{width:460px;max-width:92vw;max-height:82vh;display:flex;flex-direction:column;' +
+			'font-family:Inter,system-ui,sans-serif;font-size:13px;color:#eee;' +
+			'background:rgba(18,18,22,.97);border:1px solid rgba(200,150,46,.4);' +
+			'border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.55);overflow:hidden}' +
+			'#nous-store-head{display:flex;align-items:center;gap:8px;padding:14px 16px 10px}' +
+			'#nous-store-head span{flex:1;font-weight:700;font-size:15px;letter-spacing:.04em;color:#e7c069}' +
+			'#nous-store-close{background:none;border:none;color:#888;cursor:pointer;font-size:19px;line-height:1}' +
+			'#nous-store-close:hover{color:#eee}' +
+			'#nous-store-hw{padding:0 16px 10px;font-size:12px;opacity:.65;' +
+			'border-bottom:1px solid rgba(255,255,255,.07)}' +
+			'#nous-store-list{flex:1;overflow-y:auto;padding:10px 12px 14px}' +
+			'#nous-store-list::-webkit-scrollbar{width:6px}' +
+			'#nous-store-list::-webkit-scrollbar-thumb{background:rgba(200,150,46,.3);border-radius:4px}' +
+			'.nous-store-card{border:1px solid rgba(255,255,255,.09);border-radius:12px;' +
+			'padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,.03)}' +
+			'.nous-store-card.nous-rec{border-color:rgba(200,150,46,.55);background:rgba(200,150,46,.07)}' +
+			'.nous-store-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}' +
+			'.nous-store-name{font-weight:700;font-size:13px}' +
+			'.nous-store-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;white-space:nowrap}' +
+			'.nous-b-rec{background:rgba(200,150,46,.22);color:#e7c069;border:1px solid rgba(200,150,46,.5)}' +
+			'.nous-b-ok{background:rgba(255,255,255,.08);color:#bbb;border:1px solid rgba(255,255,255,.15)}' +
+			'.nous-b-heavy{background:rgba(220,60,60,.12);color:#e08080;border:1px solid rgba(220,60,60,.35)}' +
+			'.nous-b-inst{background:rgba(58,208,122,.14);color:#5fd693;border:1px solid rgba(58,208,122,.4)}' +
+			'.nous-b-vis{background:rgba(110,150,230,.14);color:#9db8ee;border:1px solid rgba(110,150,230,.35)}' +
+			'.nous-store-desc{margin:5px 0 7px;font-size:12px;line-height:1.45;opacity:.8}' +
+			'.nous-store-row{display:flex;align-items:center;gap:10px}' +
+			'.nous-store-size{font-size:11px;opacity:.55;flex:1}' +
+			'.nous-store-btn{background:rgba(200,150,46,.18);border:1px solid rgba(200,150,46,.45);' +
+			'color:#e7c069;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;' +
+			'transition:background .15s}' +
+			'.nous-store-btn:hover{background:rgba(200,150,46,.32)}' +
+			'.nous-store-prog{flex:1;display:flex;flex-direction:column;gap:4px}' +
+			'.nous-store-ptxt{font-size:11px;opacity:.75;font-variant-numeric:tabular-nums}' +
+			'.nous-store-err{font-size:11px;color:#e08080;flex:1}' +
+			'.nous-store-empty{opacity:.6;text-align:center;padding:22px 10px;font-size:12px;line-height:1.5}';
+		var st = document.createElement('style');
+		st.id = 'nous-store-style';
+		st.textContent = css;
+		document.head.appendChild(st);
+	}
+
+	function buildStore() {
+		if (storeEl && document.body && document.body.contains(storeEl)) return;
+		if (!document.body) return;
+		injectStoreStyle();
+		storeEl = document.createElement('div');
+		storeEl.id = 'nous-store-ov';
+		storeEl.classList.add('nous-hidden');
+		storeEl.innerHTML =
+			'<div id="nous-store">' +
+			'<div id="nous-store-head"><span>Modelos de IA</span>' +
+			'<button id="nous-store-close" type="button" aria-label="Fechar">&#x2715;</button></div>' +
+			'<div id="nous-store-hw">Analisando sua maquina...</div>' +
+			'<div id="nous-store-list"><div class="nous-store-empty">Carregando catalogo...</div></div>' +
+			'</div>';
+		document.body.appendChild(storeEl);
+		storeEl.addEventListener('click', function (e) {
+			if (e.target === storeEl) closeStore();
+		});
+		storeEl.querySelector('#nous-store-close').addEventListener('click', closeStore);
+	}
+
+	function openStore() {
+		buildStore();
+		if (!storeEl) return;
+		storeOpen = true;
+		storeEl.classList.remove('nous-hidden');
+		storeRefresh();
+	}
+
+	function closeStore() {
+		storeOpen = false;
+		if (storeEl) storeEl.classList.add('nous-hidden');
+		if (storeTimer) { clearTimeout(storeTimer); storeTimer = null; }
+	}
+
+	function storeRefresh() {
+		if (!storeOpen || !storeEl) return;
+		fetch(MON_URL + '/catalog', { cache: 'no-store' })
+			.then(function (r) { return r.json(); })
+			.then(renderStore)
+			.catch(function () {
+				var list = storeEl.querySelector('#nous-store-list');
+				if (list) list.innerHTML =
+					'<div class="nous-store-empty">A loja esta indisponivel.<br>' +
+					'Abra o Nous pelo atalho da area de trabalho e tente de novo.</div>';
+			});
+	}
+
+	function _hwLine(hw) {
+		if (!hw) return '';
+		if (hw.tier === 'cpu') {
+			return 'Sua maquina: sem GPU dedicada — modo CPU' +
+				(hw.ram_gb ? ' · ' + hw.ram_gb + ' GB de RAM' : '');
+		}
+		return 'Sua maquina: ' + _esc(hw.gpu_name || 'GPU') + ' · ' + hw.vram_gb + ' GB de VRAM';
+	}
+
+	function renderStore(data) {
+		if (!storeOpen || !storeEl) return;
+		var hwEl = storeEl.querySelector('#nous-store-hw');
+		var list = storeEl.querySelector('#nous-store-list');
+		if (hwEl) hwEl.textContent = _hwLine(data.hardware);
+		if (!data.ollama_online) {
+			list.innerHTML =
+				'<div class="nous-store-empty">O motor de IA (Ollama) nao esta no ar.<br>' +
+				'Abra o Nous pelo atalho da area de trabalho — ele inicia tudo sozinho.</div>';
+			return;
+		}
+		var models = data.models || [];
+		if (!models.length) {
+			list.innerHTML = '<div class="nous-store-empty">Catalogo vazio.</div>';
+			return;
+		}
+		list.innerHTML = '';
+		var anyPulling = false;
+		models.forEach(function (m) {
+			var card = document.createElement('div');
+			card.className = 'nous-store-card' + (m.fit === 'recomendado' ? ' nous-rec' : '');
+			var badges = '';
+			if (m.installed) badges += '<span class="nous-store-badge nous-b-inst">Instalado</span>';
+			else if (m.fit === 'recomendado') badges += '<span class="nous-store-badge nous-b-rec">Recomendado para sua maquina</span>';
+			else if (m.fit === 'ok') badges += '<span class="nous-store-badge nous-b-ok">Roda na sua maquina</span>';
+			else badges += '<span class="nous-store-badge nous-b-heavy">Pesado para sua maquina</span>';
+			if (m.vision) badges += '<span class="nous-store-badge nous-b-vis">Entende imagens</span>';
+			var pull = m.pull;
+			var rowHtml;
+			if (pull && pull.status === 'baixando') {
+				anyPulling = true;
+				var pct = Math.round((pull.pct || 0) * 100);
+				rowHtml =
+					'<div class="nous-store-prog">' +
+					'<div class="nous-mon-track"><div class="nous-mon-fill" style="width:' + pct + '%"></div></div>' +
+					'<span class="nous-store-ptxt">Baixando... ' + pct + '%' +
+					(pull.total_gb ? ' · ' + pull.completed_gb + ' / ' + pull.total_gb + ' GB' : '') +
+					'</span></div>';
+			} else if (pull && pull.status === 'erro') {
+				rowHtml =
+					'<span class="nous-store-err">' + _esc(pull.error || 'O download falhou.') + '</span>' +
+					'<button class="nous-store-btn" type="button" data-pull="' + _esc(m.tag) + '">Tentar de novo</button>';
+			} else if (m.installed) {
+				rowHtml = '<span class="nous-store-size">~' + m.download_gb +
+					' GB · pronto para usar — selecione no topo da tela</span>';
+			} else {
+				rowHtml = '<span class="nous-store-size">~' + m.download_gb + ' GB de download · ' +
+					(CAT_LABEL[m.category] || m.category) + '</span>' +
+					'<button class="nous-store-btn" type="button" data-pull="' + _esc(m.tag) + '">Baixar</button>';
+			}
+			card.innerHTML =
+				'<div class="nous-store-top"><span class="nous-store-name">' + _esc(m.name) + '</span>' +
+				badges + '</div>' +
+				'<div class="nous-store-desc">' + _esc(m.desc) + '</div>' +
+				'<div class="nous-store-row">' + rowHtml + '</div>';
+			list.appendChild(card);
+		});
+		list.querySelectorAll('[data-pull]').forEach(function (b) {
+			b.addEventListener('click', function () { startPull(b.getAttribute('data-pull')); });
+		});
+		if (storeTimer) clearTimeout(storeTimer);
+		if (anyPulling) storeTimer = setTimeout(storeRefresh, 2000);
+	}
+
+	function startPull(tag) {
+		if (!tag) return;
+		fetch(MON_URL + '/pull', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ model: tag })
+		}).catch(function () {}).then(function () { setTimeout(storeRefresh, 400); });
+	}
+
+	/* ====================== Assistente de primeiro uso ======================
+	 * Se o usuario esta logado e o Ollama nao tem NENHUM modelo de chat,
+	 * mostra uma boas-vindas com o modelo recomendado e um botao unico.
+	 * Some sozinho (para sempre) depois do primeiro download.
+	 * ======================================================================= */
+	var wizEl = null, wizShown = false, wizTimer = null;
+
+	function wizCheck() {
+		if (wizShown || storeOpen || !onHome() || !document.body) return;
+		try { if (sessionStorage.getItem('nous-wizard-skip') === '1') return; } catch (e) {}
+		var token = '';
+		try { token = localStorage.getItem('token') || ''; } catch (e) {}
+		if (!token) return;
+		fetch('http://127.0.0.1:11434/api/tags', { cache: 'no-store' })
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				var chat = (data.models || []).filter(function (m) {
+					var n = (m.name || '').toLowerCase();
+					return n.indexOf('embed') === -1 && n.indexOf('minilm') === -1 &&
+						n.indexOf('bge-') === -1 && n.indexOf('rerank') === -1;
+				});
+				if (!chat.length && !wizShown && !storeOpen) showWizard();
+			})
+			.catch(function () {});
+	}
+
+	function _wizSkip() {
+		try { sessionStorage.setItem('nous-wizard-skip', '1'); } catch (e) {}
+		if (wizEl) wizEl.remove();
+		wizEl = null;
+		if (wizTimer) { clearTimeout(wizTimer); wizTimer = null; }
+	}
+
+	function showWizard() {
+		wizShown = true;
+		fetch(MON_URL + '/catalog', { cache: 'no-store' })
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				var models = (data && data.models) || [];
+				var rec = null;
+				models.forEach(function (m) {
+					if (!rec && m.fit === 'recomendado' && !m.installed) rec = m;
+				});
+				if (!rec) rec = models.length ? models[0] : null;
+				if (rec) renderWizard(rec);
+				else wizShown = false; /* loja offline: tenta de novo no proximo ciclo */
+			})
+			.catch(function () { wizShown = false; });
+	}
+
+	function renderWizard(rec) {
+		injectStoreStyle();
+		if (wizEl) wizEl.remove();
+		wizEl = document.createElement('div');
+		wizEl.id = 'nous-wiz-ov';
+		wizEl.setAttribute('style',
+			'position:fixed;inset:0;z-index:10010;background:rgba(8,8,10,.78);' +
+			'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);' +
+			'font-family:Inter,system-ui,sans-serif;color:#eee');
+		wizEl.innerHTML =
+			'<div style="width:430px;max-width:92vw;background:rgba(18,18,22,.98);' +
+			'border:1px solid rgba(200,150,46,.45);border-radius:18px;padding:28px 26px;' +
+			'box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:center">' +
+			'<img src="/static/favicon.png" alt="" style="width:58px;height:58px;margin-bottom:10px">' +
+			'<div style="font-size:19px;font-weight:700;color:#e7c069;letter-spacing:.04em;margin-bottom:6px">' +
+			'Bem-vindo ao Nous</div>' +
+			'<div style="font-size:13px;opacity:.8;line-height:1.5;margin-bottom:18px">' +
+			'Sua IA particular esta quase pronta. Falta um passo:<br>instalar o modelo de inteligencia — ' +
+			'gratuito, direto na sua maquina.</div>' +
+			'<div class="nous-store-card nous-rec" style="text-align:left;margin-bottom:16px">' +
+			'<div class="nous-store-top"><span class="nous-store-name">' + _esc(rec.name) + '</span>' +
+			'<span class="nous-store-badge nous-b-rec">Recomendado para sua maquina</span>' +
+			(rec.vision ? '<span class="nous-store-badge nous-b-vis">Entende imagens</span>' : '') +
+			'</div>' +
+			'<div class="nous-store-desc">' + _esc(rec.desc) + ' (~' + rec.download_gb + ' GB de download)</div>' +
+			'<div id="nous-wiz-zone" class="nous-store-row"></div>' +
+			'</div>' +
+			'<div style="display:flex;gap:14px;justify-content:center;font-size:12px">' +
+			'<a id="nous-wiz-more" href="javascript:void(0)" style="color:#c8962e;text-decoration:none">ver outros modelos</a>' +
+			'<a id="nous-wiz-skip" href="javascript:void(0)" style="color:#777;text-decoration:none">agora nao</a>' +
+			'</div></div>';
+		document.body.appendChild(wizEl);
+		wizEl.querySelector('#nous-wiz-more').addEventListener('click', function () {
+			_wizSkip(); openStore();
+		});
+		wizEl.querySelector('#nous-wiz-skip').addEventListener('click', _wizSkip);
+		_wizIdle(rec);
+	}
+
+	function _wizIdle(rec) {
+		var zone = wizEl && wizEl.querySelector('#nous-wiz-zone');
+		if (!zone) return;
+		zone.innerHTML =
+			'<button class="nous-store-btn" type="button" style="width:100%;padding:9px;font-size:13px">' +
+			'Baixar e comecar</button>';
+		zone.querySelector('button').addEventListener('click', function () {
+			startPull(rec.tag);
+			_wizProgress(rec);
+		});
+	}
+
+	function _wizProgress(rec) {
+		var zone = wizEl && wizEl.querySelector('#nous-wiz-zone');
+		if (!zone) return;
+		zone.innerHTML =
+			'<div class="nous-store-prog">' +
+			'<div class="nous-mon-track"><div class="nous-mon-fill" id="nous-wiz-fill" style="width:0%"></div></div>' +
+			'<span class="nous-store-ptxt" id="nous-wiz-ptxt">Iniciando o download... ' +
+			'Pode deixar esta janela aberta — avisamos quando terminar.</span></div>';
+		function poll() {
+			fetch(MON_URL + '/pull/status?model=' + encodeURIComponent(rec.tag), { cache: 'no-store' })
+				.then(function (r) { return r.json(); })
+				.then(function (st) {
+					if (!wizEl) return;
+					if (st.status === 'pronto') { _wizDone(); return; }
+					if (st.status === 'erro') { _wizError(rec, st.error); return; }
+					var pct = Math.round((st.pct || 0) * 100);
+					var fill = wizEl.querySelector('#nous-wiz-fill');
+					var txt = wizEl.querySelector('#nous-wiz-ptxt');
+					if (fill) fill.style.width = pct + '%';
+					if (txt) txt.textContent = 'Baixando... ' + pct + '%' +
+						(st.total_gb ? ' · ' + st.completed_gb + ' / ' + st.total_gb + ' GB' : '') +
+						' — pode deixar esta janela aberta.';
+					wizTimer = setTimeout(poll, 2000);
+				})
+				.catch(function () { wizTimer = setTimeout(poll, 4000); });
+		}
+		poll();
+	}
+
+	function _wizError(rec, msg) {
+		var zone = wizEl && wizEl.querySelector('#nous-wiz-zone');
+		if (!zone) return;
+		zone.innerHTML =
+			'<span class="nous-store-err">' + _esc(msg || 'O download falhou.') + '</span>' +
+			'<button class="nous-store-btn" type="button">Tentar de novo</button>';
+		zone.querySelector('button').addEventListener('click', function () {
+			startPull(rec.tag);
+			_wizProgress(rec);
+		});
+	}
+
+	function _wizDone() {
+		var zone = wizEl && wizEl.querySelector('#nous-wiz-zone');
+		if (!zone) return;
+		zone.innerHTML =
+			'<div style="flex:1;text-align:center">' +
+			'<div style="color:#5fd693;font-weight:600;font-size:13px;margin-bottom:8px">' +
+			'Tudo pronto! Sua IA foi instalada.</div>' +
+			'<button class="nous-store-btn" type="button" style="width:100%;padding:9px;font-size:13px">' +
+			'Comecar a conversar</button></div>';
+		zone.querySelector('button').addEventListener('click', function () {
+			location.reload();
+		});
+	}
+
 	/* ====================== Link "Criar conta" na tela de auth ====================== *
 	 * O Open WebUI esconde o botao "Criar conta" quando ENABLE_SIGNUP=False ou quando  *
 	 * o admin ja' existe. Injetamos um link discreto para /auth?mode=signup para que   *
@@ -788,6 +1139,9 @@
 		refreshMonitor();
 		setInterval(refreshMonitor, 3000);
 		startCapGate();
+		/* primeiro uso: oferece o download do modelo se nao ha nenhum */
+		setTimeout(wizCheck, 3000);
+		setInterval(wizCheck, 12000);
 	}
 
 	if (document.readyState === 'loading') {

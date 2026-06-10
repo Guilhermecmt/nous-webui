@@ -74,8 +74,8 @@ elseif ($vramGB -ge $GPU_VRAM_GB) {
     Write-Host "  AVANCADO (20+ GB VRAM)   ->  qwen3:32b" -ForegroundColor White
     Write-Host "    Qualidade proxima do GPT-4. Para GPUs high-end (RX 9070 XT 16GB, RTX 4090)."
     Write-Host ""
-    Write-Host "  O instalador baixa o gemma4:12b por padrao." -ForegroundColor DarkGray
-    Write-Host "  Para trocar depois: abra o Nous > clique no modelo no topo > Search > digite o nome." -ForegroundColor DarkGray
+    Write-Host "  Voce nao precisa decorar nada: no primeiro uso o Nous recomenda e" -ForegroundColor DarkGray
+    Write-Host "  baixa o modelo ideal sozinho (Loja de Modelos, dentro do app)." -ForegroundColor DarkGray
     exit 0
 }
 else {
@@ -92,7 +92,7 @@ else {
     Write-Host "  AVANCADO (CPU com 32+ GB RAM)       ->  qwen3:8b" -ForegroundColor White
     Write-Host "    Melhor relacao qualidade/velocidade em CPU com muita RAM."
     Write-Host ""
-    Write-Host "  O instalador baixa o gemma4:12b. Para CPU, troque por gemma4:e4b:" -ForegroundColor DarkGray
-    Write-Host "  Abra o Nous > clique no modelo no topo > Search > gemma4:e4b > baixar." -ForegroundColor DarkGray
+    Write-Host "  Voce nao precisa decorar nada: no primeiro uso o Nous detecta o modo" -ForegroundColor DarkGray
+    Write-Host "  CPU e recomenda modelos leves sozinho (Loja de Modelos, dentro do app)." -ForegroundColor DarkGray
     exit 2
 }
